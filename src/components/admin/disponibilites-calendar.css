@@ -1,0 +1,112 @@
+/* FullCalendar — charte Le Repasseur (wrapper uniquement) */
+.disponibilites-calendar-wrap .fc {
+  --fc-border-color: rgb(226 232 240);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgb(248 250 252);
+  --fc-today-bg-color: rgba(16, 41, 75, 0.07);
+  --fc-button-bg-color: #10294b;
+  --fc-button-border-color: #10294b;
+  --fc-button-text-color: #fff;
+  --fc-button-hover-bg-color: #1a3a66;
+  --fc-button-hover-border-color: #1a3a66;
+  --fc-button-active-bg-color: #0d2140;
+  --fc-event-bg-color: #10294b;
+  --fc-event-border-color: #10294b;
+  --fc-event-text-color: #fff;
+  font-family: inherit;
+}
+
+.disponibilites-calendar-wrap .fc .fc-toolbar.fc-header-toolbar {
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.disponibilites-calendar-wrap .fc .fc-toolbar-title {
+  font-family: var(--font-lobster), cursive;
+  font-size: 1.45rem;
+  font-weight: 400;
+  color: #10294b;
+}
+
+.disponibilites-calendar-wrap .fc .fc-button {
+  border-radius: 0.65rem;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.45rem 0.85rem;
+  text-transform: none;
+}
+
+.disponibilites-calendar-wrap .fc .fc-button-primary:not(:disabled):active,
+.disponibilites-calendar-wrap .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: var(--fc-button-active-bg-color);
+  border-color: var(--fc-button-active-bg-color);
+}
+
+.disponibilites-calendar-wrap .fc .fc-col-header-cell {
+  padding: 0.55rem 0.2rem;
+  vertical-align: middle;
+}
+
+.disponibilites-calendar-wrap .fc .fc-col-header-cell-cushion {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.disponibilites-calendar-wrap .fc .fc-daygrid-day-number {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #334155;
+  padding: 0.35rem 0.45rem;
+}
+
+.disponibilites-calendar-wrap .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  background: #10294b;
+  color: #fff;
+  border-radius: 9999px;
+  width: 1.65rem;
+  height: 1.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.disponibilites-calendar-wrap .fc .fc-daygrid-body-natural .fc-daygrid-day-events {
+  margin-bottom: 0.35rem;
+}
+
+.disponibilites-calendar-wrap .fc .fc-event {
+  border-radius: 0.45rem;
+  border: none !important;
+  box-shadow: 0 2px 6px rgba(16, 41, 75, 0.18);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 3px 6px;
+}
+
+.disponibilites-calendar-wrap .fc .fc-daygrid-event .fc-event-title {
+  font-weight: 700;
+}
+
+.disponibilites-calendar-wrap .fc .fc-timegrid-slot-label {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.disponibilites-calendar-wrap .fc .fc-timegrid-now-indicator-line {
+  border-color: #ce2029;
+}
+
+.disponibilites-calendar-wrap .fc .fc-timegrid-now-indicator-arrow {
+  border-top-color: #ce2029;
+}
+
+.disponibilites-calendar-wrap .fc .fc-scrollgrid {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}

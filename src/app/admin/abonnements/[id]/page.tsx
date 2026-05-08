@@ -1,0 +1,114 @@
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { AbonnementForm } from "@/components/admin/AbonnementForm";
+import {
+  ABONNEMENTS_COLLECTION,
+  docToFormValues,
+  resolveAbonnementByRouteId,
+  type AbonnementFormValues,
+} from "@/lib/abonnementsAdmin";
+import { getFirebaseFirestore } from "@/lib/firebase";
+
+function routeSegmentToDocId(raw: string | string[] | undefined): string {
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (!s || typeof s !== "string") return "";
+  try {
+    return decodeURIComponent(s).trim();
+  } catch {
+    return s.trim();
+  }
+}
+
+export default function ModifierAbonnementPage() {
+  const params = useParams();
+  const routeId = useMemo(
+    () => routeSegmentToDocId(params?.id as string | string[] | undefined),
+    [params]
+  );
+
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [firestoreId, setFirestoreId] = useState<string>("");
+  const [initial, setInitial] = useState<
+    (AbonnementFormValues & { imageUrl?: string }) | null
+  >(null);
+
+  useEffect(() => {
+    if (!routeId) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    const db = getFirebaseFirestore();
+    setLoading(true);
+    setNotFound(false);
+
+    resolveAbonnementByRouteId(db, routeId).then((res) => {
+      if (!res) {
+        setNotFound(true);
+        setInitial(null);
+        setFirestoreId("");
+        setLoading(false);
+        return;
+      }
+      setFirestoreId(res.id);
+      setInitial(docToFormValues(res.data));
+      setLoading(false);
+    });
+  }, [routeId]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-2xl py-16 text-center text-slate-500">
+        Chargement…
+      </div>
+    );
+  }
+
+  if (notFound || !initial || !firestoreId) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6 text-center">
+        <p className="text-slate-600">Abonnement introuvable.</p>
+        <p className="text-xs text-slate-500">
+          ID demandé :{" "}
+          <code className="rounded bg-slate-100 px-1">{routeId || "—"}</code>{" "}
+          (collection{" "}
+          <code className="rounded bg-slate-100 px-1">{ABONNEMENTS_COLLECTION}</code>
+          ).
+        </p>
+        <Link
+          href="/admin/abonnements"
+          className="font-semibold text-[#10294B] underline"
+        >
+          Retour à la liste
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <header className="mb-8">
+        <p className="text-xs font-bold uppercase tracking-wider text-[#CE2029]">
+          Modification
+        </p>
+        <h1 className="font-lobster text-3xl text-[#10294B] sm:text-4xl">
+          Informations abonnement
+        </h1>
+        <p className="mt-2 text-slate-600">
+          Mettre à jour la fiche Firestore — équivalent de l&apos;ancien formulaire
+          d&apos;édition.
+        </p>
+      </header>
+      <AbonnementForm
+        mode="edit"
+        documentId={firestoreId}
+        initial={initial}
+      />
+    </div>
+  );
+}
