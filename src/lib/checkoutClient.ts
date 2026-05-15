@@ -1,3 +1,5 @@
+import { getFirebaseAuth } from "@/lib/firebase";
+
 /**
  * Appelle l’API de création de session Stripe Checkout (réutilisable page récap + ailleurs).
  */
@@ -12,6 +14,8 @@ export async function requestStripeCheckoutSession(
     const payload: Record<string, string> = { planId };
     const tok = options?.idToken?.trim();
     if (tok) payload.idToken = tok;
+    const mail = getFirebaseAuth().currentUser?.email?.trim();
+    if (mail) payload.customerEmail = mail;
 
     const res = await fetch("/api/checkout", {
       method: "POST",

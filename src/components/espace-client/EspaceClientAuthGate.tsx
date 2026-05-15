@@ -7,9 +7,10 @@ import {
   useSearchParams,
 } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { PageShell } from "@/components/shell/PageShell";
 import { getUserAccess } from "@/lib/authRedirect";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 
 function GateInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -28,6 +29,26 @@ function GateInner({ children }: { children: React.ReactNode }) {
       if (!u) {
         const redirect = encodeURIComponent(returnToPath);
         router.replace(`/connexion?redirect=${redirect}`);
+        return;
+      }
+
+      // Compte fermé => impossible d'entrer dans l'espace client avant réactivation.
+      try {
+        const userSnap = await getDoc(doc(getFirebaseFirestore(), "users", u.uid));
+        if (userSnap.exists()) {
+          const data = userSnap.data() as Record<string, unknown>;
+          const closed =
+            data.accountClosed === true ||
+            data.compteFerme === true ||
+            (typeof data.accountStatus === "string" &&
+              data.accountStatus.trim().toLowerCase() === "closed");
+          if (closed) {
+            router.replace("/compte");
+            return;
+          }
+        }
+      } catch {
+        router.replace("/compte");
         return;
       }
 

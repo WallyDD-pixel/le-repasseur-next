@@ -160,7 +160,9 @@ export function AppHeader() {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
-          {!navUser ? (
+          {navAuthLoading ? (
+            <span className="px-3 text-sm text-slate-500">Chargement…</span>
+          ) : !navUser ? (
             <>
               <Link
                 href="/compte"
@@ -183,7 +185,7 @@ export function AppHeader() {
             </>
           ) : (
             <>
-              {navAuthLoading || !navAccess ? (
+                {!navAccess ? (
                 <span className="px-3 text-sm text-slate-500">Chargement…</span>
               ) : (
                 <Link
@@ -282,7 +284,11 @@ export function AppHeader() {
             FAQ
           </a>
           <div className="mt-6 space-y-2 border-t border-slate-200 pt-4">
-            {!navUser ? (
+            {navAuthLoading ? (
+              <p className="py-3 text-center text-sm text-slate-500">
+                Chargement…
+              </p>
+            ) : !navUser ? (
               <>
                 <Link
                   href="/compte"
@@ -305,7 +311,7 @@ export function AppHeader() {
               </>
             ) : (
               <>
-                {navAuthLoading || !navAccess ? (
+                {!navAccess ? (
                   <p className="py-3 text-center text-sm text-slate-500">
                     Chargement…
                   </p>

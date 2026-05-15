@@ -122,12 +122,34 @@ export const CLIENT_PACK_ITEMS: ClientCatalogEntry[] = [
   },
 ];
 
+/** Recharges / produits réservés aux clients déjà abonnés. */
+export const CLIENT_SUBSCRIBER_PACK_ITEMS: ClientCatalogEntry[] = [
+  {
+    imageKey: "pack5",
+    name: "Recharge 5 kg (abonné)",
+    priceLine: "29€",
+    primaryCta: "Commander",
+    detailLine: "1 collecte recharge · réservé aux abonnés",
+    bullets: [
+      "Recharge ponctuelle de 5 kg",
+      "Même qualité de repassage et retour 24h",
+      "Idéal quand le quota mensuel est atteint",
+    ],
+    homeAnchor: "/#collecte",
+    recapPlanId: "Recharge 5 kg",
+  },
+];
+
 /** Retrouve une offre catalogue à partir de `recapPlanId` (URL récap, Stripe, etc.). */
 export function getCatalogEntryByRecapPlanId(
   recapPlanId: string
 ): ClientCatalogEntry | undefined {
   const id = recapPlanId.trim();
-  return [...CLIENT_SUBSCRIPTION_ITEMS, ...CLIENT_PACK_ITEMS].find(
+  return [
+    ...CLIENT_SUBSCRIPTION_ITEMS,
+    ...CLIENT_PACK_ITEMS,
+    ...CLIENT_SUBSCRIBER_PACK_ITEMS,
+  ].find(
     (p) => p.recapPlanId === id
   );
 }

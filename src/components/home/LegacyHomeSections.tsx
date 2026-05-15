@@ -13,6 +13,8 @@ const FB_MOBILE2 =
 /** Contour ~3px bleu marine + liseré rubis (couleurs du site) */
 const HOME_IMG_FRAME =
   "box-border overflow-hidden rounded-xl border-[3px] border-[#10294B] shadow-[0_0_0_1px_rgba(206,32,41,0.95)]";
+const SECTION_CARD =
+  "rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8";
 
 function FireImg({
   src,
@@ -42,21 +44,26 @@ function FireImg({
   );
 }
 
-function CtaBar() {
+function CtaBar({ planId }: { planId?: string }) {
+  const checkoutHref = planId
+    ? `/espace-client/recap?plan=${encodeURIComponent(planId)}`
+    : "/#offres";
   return (
     <div
-      className="mt-5 flex flex-col items-center justify-center gap-3 px-4 py-3 text-center"
-      style={{ backgroundColor: "#10294B" }}
+      className="mt-6 flex flex-col items-center justify-center gap-3 rounded-2xl border border-[#10294B]/30 bg-gradient-to-r from-[#10294B] to-[#183c6d] px-4 py-4 text-center shadow-lg"
     >
       <Link
-        href="/connexion"
-        className="rounded-[10px] px-5 py-2.5 font-medium text-white"
+        href={checkoutHref}
+        className="rounded-xl px-6 py-2.5 font-semibold text-white outline-none transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:ring-4 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#10294B]"
         style={{ backgroundColor: "#CE2029" }}
       >
         Choisir mon abonnement
       </Link>
-      <a href="/#offres" className="text-sm text-white underline">
-        Comparez les abonnements
+      <a
+        href={planId ? checkoutHref : "/#offres"}
+        className="text-sm text-white underline outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#10294B]"
+      >
+        {planId ? "Continuer vers le paiement" : "Comparez les abonnements"}
       </a>
     </div>
   );
@@ -65,6 +72,13 @@ function CtaBar() {
 export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) {
   return (
     <div className="bg-white text-gray-900">
+      <a
+        href="#main-content"
+        className="sr-only z-50 rounded-md bg-[#10294B] px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Aller au contenu principal
+      </a>
+      <main id="main-content" role="main">
       <div className="w-full overflow-x-hidden px-0 pt-2 sm:pt-4">
         <picture>
           <source
@@ -84,16 +98,17 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
         </picture>
       </div>
 
-      <div className="container mx-auto max-w-[1200px] px-4 py-6">
-        <div className="flex flex-col-reverse items-center gap-8 py-6 lg:flex-row-reverse lg:items-center">
+      <div className="container mx-auto max-w-[1200px] px-4 py-8">
+        <div className="rounded-[2rem] border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-6 shadow-sm md:p-8">
+        <div className="flex flex-col-reverse items-center gap-8 py-2 lg:flex-row-reverse lg:items-center">
           <div className="w-full lg:w-1/2">
-            <h1 className="mb-3 text-3xl font-bold leading-tight text-gray-900 md:text-4xl">
+            <h1 className="mb-3 text-3xl font-extrabold leading-tight text-gray-900 md:text-5xl">
               Bienvenue chez Le Repasseur.fr
             </h1>
-            <h2 className="mb-3 text-2xl font-bold text-gray-900 md:text-3xl">
+            <p className="mb-4 text-2xl font-bold text-[#10294B] md:text-3xl">
               Vite fait, bien fait, sans vous déplacer !
-            </h2>
-            <p className="text-lg leading-relaxed text-gray-700">
+            </p>
+            <p className="text-lg leading-relaxed text-slate-700">
               Le Repasseur.fr est une entreprise locale, basée à Antibes.{" "}
               <br />
               Il a pour mission de simplifier votre quotidien grâce à notre
@@ -105,6 +120,20 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
               linge, nous nous occupons de tout pour vous permettre de profiter
               pleinement de votre temps libre.
             </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/connexion"
+                className="rounded-xl bg-[#CE2029] px-6 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
+              >
+                Commencer maintenant
+              </Link>
+              <a
+                href="/#offres"
+                className="rounded-xl border border-[#10294B]/25 bg-white px-6 py-3 font-semibold text-[#10294B] transition hover:bg-slate-50"
+              >
+                Voir les tarifs
+              </a>
+            </div>
           </div>
           <div className="w-full max-w-md lg:w-1/2">
             <div className={HOME_IMG_FRAME}>
@@ -119,10 +148,34 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
             </div>
           </div>
         </div>
+        <section
+          aria-label="Informations essentielles"
+          className="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-3"
+        >
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#10294B]">
+              Délai moyen
+            </p>
+            <p className="mt-1 text-lg font-bold text-slate-900">Retour en 24h*</p>
+          </div>
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#10294B]">
+              Zone desservie
+            </p>
+            <p className="mt-1 text-lg font-bold text-slate-900">Antibes et environs</p>
+          </div>
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#10294B]">
+              Engagement
+            </p>
+            <p className="mt-1 text-lg font-bold text-slate-900">Sans engagement</p>
+          </div>
+        </section>
+        </div>
       </div>
 
       <section id="marche" className="scroll-mt-24 container mx-auto max-w-[1200px] px-4">
-        <div className="flex flex-col gap-8 py-8 md:flex-row md:items-start">
+        <div className={`flex flex-col gap-8 py-8 md:flex-row md:items-start ${SECTION_CARD}`}>
           <div className="md:order-2 md:w-[58%]">
             <h2 className="mb-4 text-3xl font-bold text-gray-900">
               <strong>Comment ça marche</strong>
@@ -189,7 +242,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
       </section>
 
       <section id="choisir" className="scroll-mt-24 container mx-auto max-w-[1200px] px-4 py-10">
-        <div className="flex flex-col gap-8 md:flex-row md:items-start">
+        <div className={`flex flex-col gap-8 md:flex-row md:items-start ${SECTION_CARD}`}>
           <div className="md:w-[58%]">
             <h2 className="mb-4 text-3xl font-bold text-gray-900">
               <strong>Pourquoi choisir le repasseur.fr ?</strong>
@@ -248,7 +301,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
       </section>
 
       <section id="telecharger" className="scroll-mt-24 w-full py-2">
-        <div className="w-full py-8 text-center" style={{ backgroundColor: "#CE2029" }}>
+        <div className="w-full bg-gradient-to-r from-[#CE2029] to-[#b3161f] py-10 text-center shadow-inner">
           <h2 className="mb-6 px-4 text-2xl font-normal text-white md:text-3xl">
             Téléchargez l&apos;appli et programmez <br /> votre première collecte
           </h2>
@@ -287,8 +340,8 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
         </div>
       </section>
 
-      <div className="container mx-auto max-w-[1200px] px-4 py-4">
-        <div className="text-center">
+      <div className="container mx-auto max-w-[1200px] px-4 py-8">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm md:p-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={FB_DESKTOP}
@@ -314,8 +367,8 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
       </div>
 
       <section id="collecte" className="scroll-mt-24 w-full">
-        <div className="container mx-auto max-w-[1200px] px-4 py-6">
-          <h1 className="mb-6 text-3xl font-bold">Collecte sans abonnement </h1>
+        <div className={`container mx-auto max-w-[1200px] px-4 py-6 ${SECTION_CARD}`}>
+          <h2 className="mb-6 text-3xl font-bold">Collecte sans abonnement</h2>
           <div className="mb-8 flex flex-col gap-6 md:flex-row">
             <div className="md:w-1/3">
               <FireImg src={images.pack5} alt="Pack 5 kg" />
@@ -353,6 +406,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
       </section>
 
       <div className="container mx-auto max-w-[1200px] px-4 py-10">
+        <div className={SECTION_CARD}>
         <h2 className="mb-4 text-4xl font-bold" style={{ color: "#10294B" }}>
           Tarifs et Abonnements
         </h2>
@@ -409,9 +463,9 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
         </div>
 
         <section id="abonnements" className="scroll-mt-24 mt-10 space-y-12">
-          <h1 className="text-3xl font-bold" style={{ color: "#CE2029" }}>
+          <h2 className="text-3xl font-bold" style={{ color: "#CE2029" }}>
             Les Abonnements
-          </h1>
+          </h2>
 
           <div className="flex flex-col gap-6 md:flex-row">
             <div className="md:w-1/3">
@@ -435,7 +489,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
               </p>
             </div>
           </div>
-          <CtaBar />
+          <CtaBar planId="Mino" />
 
           <div className="flex flex-col gap-6 md:flex-row">
             <div className="md:w-1/3">
@@ -460,7 +514,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
               </p>
             </div>
           </div>
-          <CtaBar />
+          <CtaBar planId="Solo" />
 
           <div className="flex flex-col gap-6 md:flex-row">
             <div className="md:w-1/3">
@@ -485,7 +539,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
               </p>
             </div>
           </div>
-          <CtaBar />
+          <CtaBar planId="Duo" />
 
           <div className="flex flex-col gap-6 md:flex-row">
             <div className="md:w-1/3">
@@ -509,7 +563,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
               </p>
             </div>
           </div>
-          <CtaBar />
+          <CtaBar planId="Marmo" />
 
           <div className="flex flex-col gap-6 md:flex-row">
             <div className="md:w-1/3">
@@ -536,33 +590,39 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
               </p>
             </div>
           </div>
-          <CtaBar />
+          <CtaBar planId="Super Héros" />
         </section>
 
         <section id="offres" className="mt-16 scroll-mt-24">
-          <h1 className="mb-6 text-center text-3xl font-bold">
+          <h2 className="mb-6 text-center text-3xl font-bold">
             Comparer les abonnements
-          </h1>
+          </h2>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] border-separate border-spacing-4 text-center text-sm md:text-base">
+            <table
+              className="w-full min-w-[800px] border-separate border-spacing-4 text-center text-sm md:text-base"
+              aria-describedby="offres-table-help"
+            >
+              <caption className="pb-2 text-left text-sm text-slate-700">
+                Comparatif des prix, volumes et options de chaque formule.
+              </caption>
               <thead>
                 <tr>
-                  <th className="font-lobster p-2 text-2xl text-[#CE2029]" />
-                  <th className="font-lobster p-2 text-2xl text-[#CE2029]">Mino</th>
-                  <th className="font-lobster p-2 text-2xl text-[#CE2029]">Solo</th>
-                  <th className="font-lobster p-2 text-2xl text-[#CE2029]">Duo</th>
-                  <th className="font-lobster p-2 text-2xl text-[#CE2029]">Marmo</th>
-                  <th className="whitespace-nowrap border-r-2 border-[#CE2029] p-2 font-lobster text-2xl text-[#CE2029]">
+                  <th scope="col" className="font-lobster p-2 text-2xl text-[#CE2029]" />
+                  <th scope="col" className="font-lobster p-2 text-2xl text-[#CE2029]">Mino</th>
+                  <th scope="col" className="font-lobster p-2 text-2xl text-[#CE2029]">Solo</th>
+                  <th scope="col" className="font-lobster p-2 text-2xl text-[#CE2029]">Duo</th>
+                  <th scope="col" className="font-lobster p-2 text-2xl text-[#CE2029]">Marmo</th>
+                  <th scope="col" className="whitespace-nowrap border-r-2 border-[#CE2029] p-2 font-lobster text-2xl text-[#CE2029]">
                     Super Héros
                   </th>
-                  <th className="whitespace-nowrap p-2 font-lobster text-2xl text-[#10294B]">
+                  <th scope="col" className="whitespace-nowrap p-2 font-lobster text-2xl text-[#10294B]">
                     Pack 5 kg
                     <br />
                     <span className="text-[10px] text-[#CE2029]">
                       Sans abonnement
                     </span>
                   </th>
-                  <th className="whitespace-nowrap p-2 font-lobster text-2xl text-[#10294B]">
+                  <th scope="col" className="whitespace-nowrap p-2 font-lobster text-2xl text-[#10294B]">
                     Pack 10 kg
                     <br />
                     <span className="text-[10px] text-[#CE2029]">
@@ -573,7 +633,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
               </thead>
               <tbody>
                 <tr className="bg-gray-50">
-                  <td className="p-2 font-bold">Prix</td>
+                  <th scope="row" className="p-2 font-bold">Prix</th>
                   <td className="p-2">19€ / mois</td>
                   <td className="p-2">39€ / mois</td>
                   <td className="p-2">59€ / mois</td>
@@ -583,7 +643,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
                   <td className="p-2 font-bold text-[#CE2029]">69€</td>
                 </tr>
                 <tr className="bg-white">
-                  <td className="p-2 font-bold">Nb collecte / mois</td>
+                  <th scope="row" className="p-2 font-bold">Nb collecte / mois</th>
                   <td className="p-2">1</td>
                   <td className="p-2">1 à 2</td>
                   <td className="p-2">1 à 4</td>
@@ -593,10 +653,10 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
                   <td className="p-2">1</td>
                 </tr>
                 <tr className="bg-gray-50">
-                  <td className="p-2 font-bold">
+                  <th scope="row" className="p-2 font-bold">
                     Poids / mois <br />
                     <span className="font-normal">Nb vêtements(env)</span>
-                  </td>
+                  </th>
                   <td className="p-2">
                     <strong>2,5 kg</strong>
                     <br />
@@ -633,7 +693,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
                   </td>
                 </tr>
                 <tr className="bg-white">
-                  <td className="p-2 font-bold">Sur cintre </td>
+                  <th scope="row" className="p-2 font-bold">Sur cintre</th>
                   <td className="p-2">oui</td>
                   <td className="p-2">oui </td>
                   <td className="p-2">oui</td>
@@ -643,7 +703,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
                   <td className="p-2">oui</td>
                 </tr>
                 <tr className="bg-gray-50">
-                  <td className="p-2 font-bold">Plié</td>
+                  <th scope="row" className="p-2 font-bold">Plié</th>
                   <td className="p-2">oui</td>
                   <td className="p-2">oui </td>
                   <td className="p-2">oui</td>
@@ -653,7 +713,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
                   <td className="p-2">oui</td>
                 </tr>
                 <tr className="bg-white">
-                  <td className="p-2 font-bold">Kit de Repassage</td>
+                  <th scope="row" className="p-2 font-bold">Kit de repassage</th>
                   <td className="p-2">25€</td>
                   <td className="p-2">OFFERT</td>
                   <td className="p-2">OFFERT</td>
@@ -663,10 +723,10 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
                   <td className="p-2">30€</td>
                 </tr>
                 <tr className="bg-gray-50">
-                  <td className="p-2 font-bold">
+                  <th scope="row" className="p-2 font-bold">
                     Recharge <br />
                     <span className="font-normal">(1 collecte de 5 kg)</span>
-                  </td>
+                  </th>
                   <td className="p-2">29€</td>
                   <td className="p-2">29€</td>
                   <td className="p-2">29€</td>
@@ -677,12 +737,16 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
                 </tr>
               </tbody>
             </table>
+            <p id="offres-table-help" className="mt-3 text-sm text-slate-600">
+              Astuce : sur mobile, faites glisser le tableau horizontalement pour voir toutes les colonnes.
+            </p>
           </div>
         </section>
+        </div>
       </div>
 
       <section id="telecharger-bottom" className="w-full py-2">
-        <div className="w-full py-8 text-center" style={{ backgroundColor: "#CE2029" }}>
+        <div className="w-full bg-gradient-to-r from-[#CE2029] to-[#b3161f] py-10 text-center shadow-inner">
           <h2 className="mb-6 px-4 text-2xl font-normal text-white md:text-3xl">
             Téléchargez l&apos;appli et programmez <br /> votre première collecte
           </h2>
@@ -722,21 +786,26 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
       </section>
 
       <section id="kit" className="scroll-mt-24 container mx-auto max-w-[1200px] px-4 py-12">
-        <h1 className="mb-6 text-3xl font-bold">
+        <div className={SECTION_CARD}>
+        <h2 className="mb-6 text-3xl font-bold">
           Le Kit du Repasseur : Votre allié pour un repassage sans tracas
-        </h1>
-        <div className="flex flex-col gap-8 md:flex-row">
-          <div className="md:w-1/3">
-            <FireImg src={images.kit} alt="Kit du repasseur" style={{ maxWidth: 700 }} />
+        </h2>
+        <div className="flex flex-col gap-8 md:flex-row md:items-start">
+          <div className="w-full md:w-5/12">
+            <FireImg
+              src={images.kit}
+              alt="Kit du repasseur"
+              className="h-auto w-full object-contain"
+            />
           </div>
-          <div className="md:w-2/3">
-            <h2 className="font-lobster text-3xl" style={{ color: "#CE2029" }}>
+          <div className="w-full md:w-7/12">
+            <h3 className="font-lobster text-3xl" style={{ color: "#CE2029" }}>
               Offert
-            </h2>
-            <h2 className="text-2xl" style={{ color: "#CE2029" }}>
+            </h3>
+            <h3 className="text-2xl" style={{ color: "#CE2029" }}>
               Pour les abonnements Solo, Duo et Super Héros
-            </h2>
-            <p className="mt-4 text-gray-800">
+            </h3>
+            <p className="mt-4 max-w-2xl text-gray-800">
               Lorsque vous vous abonnez au Repasseur, vous avez la possibilité de
               commander notre Kit du Repasseur, un ensemble d&apos;outils
               essentiels conçus pour simplifier votre expérience de repassage.
@@ -785,7 +854,9 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
             </p>
           </div>
         </div>
+        </div>
       </section>
+      </main>
     </div>
   );
 }

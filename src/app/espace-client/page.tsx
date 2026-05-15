@@ -3,9 +3,17 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  Timestamp,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { EspaceClientAccountFooter } from "@/components/espace-client/EspaceClientAccountFooter";
 import { ClientProductCatalog } from "@/components/espace-client/ClientProductCatalog";
 import { EspaceClientStatusPanel } from "@/components/espace-client/EspaceClientStatusPanel";
@@ -14,6 +22,102 @@ import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 import { getUserAccess, type UserAccessResult } from "@/lib/authRedirect";
 import { siteAsset } from "@/lib/assetBase";
 import { PageShell } from "@/components/shell/PageShell";
+
+function str(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  return String(v);
+}
+
+function pickFirst(data: Record<string, unknown>, keys: string[]): unknown {
+  for (const k of keys) {
+    if (k in data && data[k] != null) return data[k];
+  }
+  return undefined;
+}
+
+function normalizeKgDisplay(data: Record<string, unknown>): string {
+  const raw = pickFirst(data, [
+    "poidsRestant",
+    "kgRestant",
+    "quotaKg",
+    "collectes",
+    "kg",
+    "poids",
+    "weight",
+  ]);
+  if (typeof raw === "number" && Number.isFinite(raw)) return `${raw} kg`;
+  if (typeof raw === "string" && raw.trim()) {
+    const t = raw.trim();
+    return t.toLowerCase().includes("kg") ? t : `${t} kg`;
+  }
+  return "—";
+}
+
+function normalizeCollectesDisplay(data: Record<string, unknown>): string {
+  const raw = pickFirst(data, [
+    "reservations",
+    "reservationsRestantes",
+    "collectes",
+    "remainingPickups",
+  ]);
+  if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
+  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  return "—";
+}
+
+type MyTxRow = {
+  id: string;
+  date: Date | null;
+  type: string;
+  titre: string;
+  montantDisplay: string;
+};
+
+function toDate(raw: unknown): Date | null {
+  if (raw instanceof Timestamp) return raw.toDate();
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "toDate" in raw &&
+    typeof (raw as { toDate: () => Date }).toDate === "function"
+  ) {
+    try {
+      return (raw as { toDate: () => Date }).toDate();
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === "string" || typeof raw === "number") {
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+function formatTxDate(d: Date | null): string {
+  if (!d) return "—";
+  return d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function formatTxAmount(raw: unknown): string {
+  if (typeof raw === "number" && Number.isFinite(raw)) return `${raw} €`;
+  if (typeof raw === "string" && raw.trim()) {
+    const t = raw.trim();
+    return t.includes("€") ? t : `${t} €`;
+  }
+  return "—";
+}
+
+function labelTxType(raw: unknown): string {
+  const t = str(raw).toLowerCase();
+  if (!t) return "Paiement";
+  if (t.includes("renouvel")) return "Renouvellement";
+  if (t.includes("abonn")) return "Abonnement";
+  if (t.includes("paiement")) return "Paiement";
+  return str(raw) || "Paiement";
+}
 
 function AppStoreBadgeRow() {
   return (
@@ -77,10 +181,16 @@ function formatFirstName(
 
 export default function EspaceClientPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [prenom, setPrenom] = useState<string | undefined>();
   const [access, setAccess] = useState<UserAccessResult | null>(null);
+  const [checkoutInfo, setCheckoutInfo] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [collectesDisplay, setCollectesDisplay] = useState("0");
+  const [poidsDisplay, setPoidsDisplay] = useState("0 kg");
+  const [txRows, setTxRows] = useState<MyTxRow[]>([]);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -93,17 +203,132 @@ export default function EspaceClientPage() {
         getDoc(doc(db, "users", u.uid)),
       ]);
       if (userSnap.exists()) {
-        const pr = userSnap.data().prenom;
+        const userData = userSnap.data() as Record<string, unknown>;
+        const pr = userData.prenom;
         if (typeof pr === "string") setPrenom(pr);
+        setCollectesDisplay(normalizeCollectesDisplay(userData));
+        setPoidsDisplay(normalizeKgDisplay(userData));
+      } else {
+        setCollectesDisplay("—");
+        setPoidsDisplay("—");
       }
       if (a.isAdmin) {
         router.replace("/admin");
         return;
       }
+      try {
+        const txSnap = await getDocs(
+          query(collection(db, "transactions"), where("userId", "==", u.uid))
+        );
+        const rows: MyTxRow[] = [];
+        txSnap.forEach((d) => {
+          const data = d.data() as Record<string, unknown>;
+          rows.push({
+            id: d.id,
+            date: toDate(data.transactionDate ?? data.date ?? data.createdAt),
+            type: labelTxType(data.type),
+            titre: str(data.titre) || str(data.role) || "Paiement",
+            montantDisplay: formatTxAmount(data.montant ?? data.amount ?? data.prix),
+          });
+        });
+        rows.sort(
+          (x, y) => (y.date?.getTime() ?? 0) - (x.date?.getTime() ?? 0)
+        );
+        setTxRows(rows);
+      } catch {
+        setTxRows([]);
+      }
       setAccess(a);
       setReady(true);
     });
   }, [router]);
+
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    const sessionId = searchParams.get("session_id");
+    const plan = searchParams.get("plan");
+    if (checkout !== "success" || !sessionId) return;
+    if (!ready) return;
+
+    const run = async () => {
+      setCheckoutError(null);
+      setCheckoutInfo("Paiement validé. Synchronisation de votre abonnement…");
+      const u = getFirebaseAuth().currentUser;
+      if (!u) {
+        setCheckoutError("Session expirée. Reconnectez-vous puis réessayez.");
+        setCheckoutInfo(null);
+        return;
+      }
+      let idToken = "";
+      try {
+        idToken = await u.getIdToken();
+      } catch {
+        setCheckoutError("Impossible de vérifier la session. Rechargez la page.");
+        setCheckoutInfo(null);
+        return;
+      }
+      const res = await fetch("/api/checkout/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, idToken }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        planId?: string | null;
+        subscriptionActivated?: boolean;
+      };
+      if (!res.ok || !data.ok) {
+        setCheckoutError(
+          typeof data.error === "string"
+            ? data.error
+            : "Confirmation du paiement impossible."
+        );
+        setCheckoutInfo(null);
+        return;
+      }
+      const label = data.planId || plan || "votre achat";
+      setCheckoutInfo(
+        data.subscriptionActivated
+          ? `Merci. Votre abonnement « ${label} » est activé.`
+          : `Merci. Votre paiement pour « ${label} » est confirmé.`
+      );
+
+      // Recharge l'accès (rôle / abonnement) après mise à jour serveur.
+      try {
+        const a = await getUserAccess(u.uid);
+        setAccess(a);
+        const snap = await getDoc(doc(getFirebaseFirestore(), "users", u.uid));
+        if (snap.exists()) {
+          const userData = snap.data() as Record<string, unknown>;
+          setCollectesDisplay(normalizeCollectesDisplay(userData));
+          setPoidsDisplay(normalizeKgDisplay(userData));
+        }
+        const txSnap = await getDocs(
+          query(collection(getFirebaseFirestore(), "transactions"), where("userId", "==", u.uid))
+        );
+        const rows: MyTxRow[] = [];
+        txSnap.forEach((d) => {
+          const data = d.data() as Record<string, unknown>;
+          rows.push({
+            id: d.id,
+            date: toDate(data.transactionDate ?? data.date ?? data.createdAt),
+            type: labelTxType(data.type),
+            titre: str(data.titre) || str(data.role) || "Paiement",
+            montantDisplay: formatTxAmount(data.montant ?? data.amount ?? data.prix),
+          });
+        });
+        rows.sort(
+          (x, y) => (y.date?.getTime() ?? 0) - (x.date?.getTime() ?? 0)
+        );
+        setTxRows(rows);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    void run();
+  }, [searchParams, ready]);
 
   if (!ready || !access) {
     return (
@@ -129,11 +354,25 @@ export default function EspaceClientPage() {
       <div className="space-y-8 lg:space-y-10">
         <h1 className="sr-only">Espace client Le Repasseur</h1>
 
+        {checkoutInfo ? (
+          <p
+            className="rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-center text-sm text-emerald-900"
+            role="status"
+          >
+            {checkoutInfo}
+          </p>
+        ) : null}
+        {checkoutError ? (
+          <p className="text-center text-sm text-red-600" role="alert">
+            {checkoutError}
+          </p>
+        ) : null}
+
         <EspaceClientStatusPanel
           firstName={firstName}
           subscriptionDisplay={subscriptionDisplay}
-          collectesDisplay={subscribed ? "—" : "0"}
-          poidsDisplay={subscribed ? "—" : "0 kg"}
+          collectesDisplay={subscribed ? collectesDisplay : "0"}
+          poidsDisplay={subscribed ? poidsDisplay : "0 kg"}
           subscribedHint={subscribed}
         />
 
@@ -152,9 +391,53 @@ export default function EspaceClientPage() {
           </div>
         ) : null}
 
-        <ClientProductCatalog />
+        <ClientProductCatalog
+          subscribed={subscribed}
+          currentRole={access.role}
+        />
 
-        <EspaceClientAccountFooter />
+        <section
+          className="rounded-2xl border border-slate-200/70 bg-white/85 p-5 shadow-sm sm:p-6"
+          aria-labelledby="tx-history"
+        >
+          <h2
+            id="tx-history"
+            className="font-lobster text-2xl text-[#10294B]"
+          >
+            3. Historique des transactions
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Vos paiements, abonnements et renouvellements.
+          </p>
+          {txRows.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500">Aucune transaction pour le moment.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200/80">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr className="text-left text-slate-600">
+                    <th className="px-4 py-2.5 font-semibold">Date</th>
+                    <th className="px-4 py-2.5 font-semibold">Type</th>
+                    <th className="px-4 py-2.5 font-semibold">Détail</th>
+                    <th className="px-4 py-2.5 font-semibold">Montant</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {txRows.map((r) => (
+                    <tr key={r.id}>
+                      <td className="px-4 py-2.5 text-slate-700">{formatTxDate(r.date)}</td>
+                      <td className="px-4 py-2.5 text-slate-700">{r.type}</td>
+                      <td className="px-4 py-2.5 text-slate-700">{r.titre}</td>
+                      <td className="px-4 py-2.5 font-semibold text-[#10294B]">{r.montantDisplay}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <EspaceClientAccountFooter subscribed={subscribed} />
 
         <div className="flex flex-col items-center gap-4 border-t border-slate-200/50 pt-8 lg:flex-row lg:flex-wrap lg:justify-center lg:gap-x-12 lg:pt-10">
           <Link

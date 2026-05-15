@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import {
   CLIENT_PACK_ITEMS,
+  CLIENT_SUBSCRIBER_PACK_ITEMS,
   CLIENT_SUBSCRIPTION_ITEMS,
   type ClientCatalogEntry,
 } from "@/lib/clientCatalog";
@@ -208,12 +209,25 @@ function CatalogCard({
   );
 }
 
-export function ClientProductCatalog() {
+export function ClientProductCatalog({
+  subscribed,
+  currentRole,
+}: {
+  subscribed: boolean;
+  currentRole?: string;
+}) {
   const [images, setImages] = useState<HomeFirestoreImages>({});
 
   useEffect(() => {
     loadHomeFirestoreImages().then(setImages);
   }, []);
+
+  const packs = subscribed ? CLIENT_SUBSCRIBER_PACK_ITEMS : CLIENT_PACK_ITEMS;
+  const normalizedCurrent = currentRole?.trim().toLowerCase() ?? "";
+  const visibleSubscriptions = CLIENT_SUBSCRIPTION_ITEMS.filter((item) => {
+    if (!subscribed || !normalizedCurrent) return true;
+    return item.recapPlanId.trim().toLowerCase() !== normalizedCurrent;
+  });
 
   return (
     <div className="space-y-12 lg:space-y-16">
@@ -232,27 +246,41 @@ export function ClientProductCatalog() {
         <SectionHeading
           id="choose-abo"
           step="1"
-          title="Choisir un abonnement"
-          subtitle="Chaque ligne est une formule complète : comparez les volumes, puis un récapitulatif sur ce site avant le paiement sécurisé Stripe."
+          title={subscribed ? "Changer d’abonnement" : "Choisir un abonnement"}
+          subtitle={
+            subscribed
+              ? "Vous êtes déjà abonné : choisissez une formule pour augmenter ou réduire votre abonnement actuel."
+              : "Chaque ligne est une formule complète : comparez les volumes, puis un récapitulatif sur ce site avant le paiement sécurisé Stripe."
+          }
         />
         <ul className="flex flex-col gap-6 lg:gap-7">
-          {CLIENT_SUBSCRIPTION_ITEMS.map((item) => (
+          {visibleSubscriptions.map((item) => (
             <li key={item.imageKey}>
               <CatalogCard item={item} imageUrl={images[item.imageKey]} />
             </li>
           ))}
         </ul>
+        {subscribed && visibleSubscriptions.length === 0 ? (
+          <p className="mt-5 text-sm text-slate-600">
+            Votre formule actuelle est déjà la plus adaptée. Aucune autre
+            formule n’est disponible pour modification.
+          </p>
+        ) : null}
       </section>
 
       <section aria-labelledby="choose-pack" className="scroll-mt-24">
         <SectionHeading
           id="choose-pack"
           step="2"
-          title="Sans abonnement"
-          subtitle="Collecte ponctuelle : même principe — récapitulatif sur ce site, puis paiement Stripe."
+          title={subscribed ? "Recharges pour abonnés" : "Sans abonnement"}
+          subtitle={
+            subscribed
+              ? "Produits ponctuels réservés aux clients abonnés : récapitulatif ici, puis paiement Stripe."
+              : "Collecte ponctuelle : même principe — récapitulatif sur ce site, puis paiement Stripe."
+          }
         />
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-7">
-          {CLIENT_PACK_ITEMS.map((item) => (
+          {packs.map((item) => (
             <CatalogCard
               key={item.imageKey}
               item={item}

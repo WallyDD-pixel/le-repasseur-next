@@ -1,11 +1,16 @@
 import {
   CLIENT_PACK_ITEMS,
+  CLIENT_SUBSCRIBER_PACK_ITEMS,
   CLIENT_SUBSCRIPTION_ITEMS,
 } from "@/lib/clientCatalog";
 
 /** Identifiants d’offre connus du catalogue (récap legacy + métadonnées Stripe). */
 export const CHECKOUT_PLAN_IDS = new Set(
-  [...CLIENT_SUBSCRIPTION_ITEMS, ...CLIENT_PACK_ITEMS].map((p) => p.recapPlanId)
+  [
+    ...CLIENT_SUBSCRIPTION_ITEMS,
+    ...CLIENT_PACK_ITEMS,
+    ...CLIENT_SUBSCRIBER_PACK_ITEMS,
+  ].map((p) => p.recapPlanId)
 );
 
 export function isCheckoutPlanId(id: string): boolean {
@@ -25,6 +30,7 @@ const PLAN_TO_STRIPE_PRICE_ENV: Record<string, string> = {
   "Super Héros": "STRIPE_PRICE_SUPER_HEROS",
   "Pack 5 kg": "STRIPE_PRICE_PACK_5KG",
   "Pack 10 kg": "STRIPE_PRICE_PACK_10KG",
+  "Recharge 5 kg": "STRIPE_PRICE_RECHARGE_5KG",
 };
 
 /** Nom de variable `.env` pour le `price_…` du plan (messages d’erreur / doc). */
@@ -44,6 +50,7 @@ export function stripePriceIdForPlan(planId: string): string | undefined {
     "Super Héros": process.env.STRIPE_PRICE_SUPER_HEROS,
     "Pack 5 kg": process.env.STRIPE_PRICE_PACK_5KG,
     "Pack 10 kg": process.env.STRIPE_PRICE_PACK_10KG,
+    "Recharge 5 kg": process.env.STRIPE_PRICE_RECHARGE_5KG,
   };
   const raw = map[planId];
   return typeof raw === "string" ? raw.trim() || undefined : undefined;

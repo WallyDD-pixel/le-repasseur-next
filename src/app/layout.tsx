@@ -17,7 +17,7 @@ const lobster = Lobster({
 
 export const metadata: Metadata = {
   title: {
-    default: "Le Repasseur — Repassage à domicile",
+    default: "Le Repasseur",
     template: "%s | Le Repasseur",
   },
   description:
@@ -27,6 +27,16 @@ export const metadata: Metadata = {
     siteName: "Le Repasseur",
     locale: "fr_FR",
     type: "website",
+  },
+  icons: {
+    icon: [
+      {
+        url: "/favicon.png?v=2",
+        type: "image/png",
+      },
+    ],
+    shortcut: ["/favicon.png?v=2"],
+    apple: ["/apple-touch-icon.png?v=2"],
   },
 };
 

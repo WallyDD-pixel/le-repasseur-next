@@ -17,6 +17,16 @@ import {
 /** Montant minimal facturable Stripe en EUR pour `unit_amount` (souvent 0,50 €). */
 const STRIPE_MIN_EUR_UNIT_CENTS = 50;
 
+function parseOptionalEmailBody(body: unknown): string | undefined {
+  if (typeof body !== "object" || body === null) return undefined;
+  const raw = (body as { customerEmail?: unknown }).customerEmail;
+  if (typeof raw !== "string") return undefined;
+  const t = raw.trim().toLowerCase();
+  if (t.length === 0 || t.length > 320) return undefined;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return undefined;
+  return raw.trim().slice(0, 320);
+}
+
 export async function POST(req: NextRequest) {
   let body: unknown;
   try {
@@ -49,6 +59,14 @@ export async function POST(req: NextRequest) {
     ? await verifyFirebaseUserIdToken(idTokenRaw)
     : null;
 
+  const clientSuggestedEmail = parseOptionalEmailBody(body);
+
+  /** E-mail Stripe : priorité Auth Admin + Firestore ; complément depuis le navigateur pour le même utilisateur. */
+  const checkoutCustomerEmail =
+    firebaseUser?.email?.trim() ||
+    (!getFirebaseAdminApp() ? clientSuggestedEmail : undefined) ||
+    (firebaseUser?.uid ? clientSuggestedEmail : undefined);
+
   if (getFirebaseAdminApp() && !firebaseUser) {
     return NextResponse.json(
       {
@@ -57,6 +75,35 @@ export async function POST(req: NextRequest) {
       },
       { status: 401 }
     );
+  }
+
+  if (firebaseUser?.uid) {
+    const db = getAdminFirestore();
+    if (db) {
+      try {
+        const u = await db.collection("users").doc(firebaseUser.uid).get();
+        const d = (u.data() ?? {}) as Record<string, unknown>;
+        const closed =
+          d.accountClosed === true ||
+          d.compteFerme === true ||
+          (typeof d.accountStatus === "string" &&
+            d.accountStatus.trim().toLowerCase() === "closed");
+        if (closed) {
+          return NextResponse.json(
+            {
+              error:
+                "Compte fermé : réactivez votre compte depuis « Mon compte » pour accéder aux paiements.",
+            },
+            { status: 403 }
+          );
+        }
+      } catch {
+        return NextResponse.json(
+          { error: "Vérification du compte impossible." },
+          { status: 502 }
+        );
+      }
+    }
   }
 
   const secret = await resolveStripeSecret();
@@ -141,20 +188,18 @@ export async function POST(req: NextRequest) {
 
   const extraMeta: Record<string, string> = { planId };
   if (firebaseUser?.uid) extraMeta.firebaseUid = firebaseUser.uid;
-  if (firebaseUser?.email) extraMeta.userEmail = firebaseUser.email;
+  if (checkoutCustomerEmail) extraMeta.userEmail = checkoutCustomerEmail;
   if (firebaseUser?.name) extraMeta.userName = firebaseUser.name;
 
   const sessionStripe: Stripe.Checkout.SessionCreateParams = {
     mode,
     line_items: [lineItem],
-    success_url: `${origin}/espace-client?checkout=success&plan=${encodeURIComponent(planId)}`,
+    success_url: `${origin}/espace-client?checkout=success&plan=${encodeURIComponent(planId)}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/espace-client/recap?plan=${encodeURIComponent(planId)}&checkout=cancel`,
     metadata: extraMeta,
-    ...(firebaseUser?.uid
-      ? {
-          client_reference_id: firebaseUser.uid,
-          ...(firebaseUser.email ? { customer_email: firebaseUser.email } : {}),
-        }
+    ...(firebaseUser?.uid ? { client_reference_id: firebaseUser.uid } : {}),
+    ...(checkoutCustomerEmail
+      ? { customer_email: checkoutCustomerEmail }
       : {}),
     ...(mode === "subscription"
       ? {
