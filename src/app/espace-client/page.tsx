@@ -19,6 +19,7 @@ import { ClientProductCatalog } from "@/components/espace-client/ClientProductCa
 import { EspaceClientStatusPanel } from "@/components/espace-client/EspaceClientStatusPanel";
 import { PartnerCodeForm } from "@/components/espace-client/PartnerCodeForm";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
+import { shouldShowClientTestOffer } from "@/lib/clientCatalog";
 import { getUserAccess, type UserAccessResult } from "@/lib/authRedirect";
 import { siteAsset } from "@/lib/assetBase";
 import { PageShell } from "@/components/shell/PageShell";
@@ -37,12 +38,13 @@ function pickFirst(data: Record<string, unknown>, keys: string[]): unknown {
   return undefined;
 }
 
+/** Quota kg restant — Firestore : champ `collectes` (pas confondre avec les collectes restantes). */
 function normalizeKgDisplay(data: Record<string, unknown>): string {
   const raw = pickFirst(data, [
+    "collectes",
     "poidsRestant",
     "kgRestant",
     "quotaKg",
-    "collectes",
     "kg",
     "poids",
     "weight",
@@ -52,19 +54,22 @@ function normalizeKgDisplay(data: Record<string, unknown>): string {
     const t = raw.trim();
     return t.toLowerCase().includes("kg") ? t : `${t} kg`;
   }
-  return "—";
+  return "0 kg";
 }
 
-function normalizeCollectesDisplay(data: Record<string, unknown>): string {
+/** Nombre de collectes restantes — Firestore : champ `reservations`. */
+function normalizeReservationsDisplay(data: Record<string, unknown>): string {
   const raw = pickFirst(data, [
     "reservations",
+    "reservation",
     "reservationsRestantes",
-    "collectes",
+    "nbReservations",
+    "nombreReservations",
     "remainingPickups",
   ]);
-  if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
+  if (typeof raw === "number" && Number.isFinite(raw)) return String(Math.floor(raw));
   if (typeof raw === "string" && raw.trim()) return raw.trim();
-  return "—";
+  return "0";
 }
 
 type MyTxRow = {
@@ -191,6 +196,7 @@ export default function EspaceClientPage() {
   const [collectesDisplay, setCollectesDisplay] = useState("0");
   const [poidsDisplay, setPoidsDisplay] = useState("0 kg");
   const [txRows, setTxRows] = useState<MyTxRow[]>([]);
+  const [showTestOffer, setShowTestOffer] = useState(false);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -202,11 +208,12 @@ export default function EspaceClientPage() {
         getUserAccess(u.uid),
         getDoc(doc(db, "users", u.uid)),
       ]);
+      let userData: Record<string, unknown> | undefined;
       if (userSnap.exists()) {
-        const userData = userSnap.data() as Record<string, unknown>;
+        userData = userSnap.data() as Record<string, unknown>;
         const pr = userData.prenom;
         if (typeof pr === "string") setPrenom(pr);
-        setCollectesDisplay(normalizeCollectesDisplay(userData));
+        setCollectesDisplay(normalizeReservationsDisplay(userData));
         setPoidsDisplay(normalizeKgDisplay(userData));
       } else {
         setCollectesDisplay("—");
@@ -239,9 +246,22 @@ export default function EspaceClientPage() {
         setTxRows([]);
       }
       setAccess(a);
+      setShowTestOffer(
+        shouldShowClientTestOffer(userData, a.isSubscribedClient)
+      );
       setReady(true);
     });
   }, [router]);
+
+  useEffect(() => {
+    if (!ready || searchParams.get("welcome") !== "1") return;
+    const el =
+      document.getElementById("try-service") ??
+      document.getElementById("choose-abo");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [ready, searchParams]);
 
   useEffect(() => {
     const checkout = searchParams.get("checkout");
@@ -301,8 +321,11 @@ export default function EspaceClientPage() {
         const snap = await getDoc(doc(getFirebaseFirestore(), "users", u.uid));
         if (snap.exists()) {
           const userData = snap.data() as Record<string, unknown>;
-          setCollectesDisplay(normalizeCollectesDisplay(userData));
+          setCollectesDisplay(normalizeReservationsDisplay(userData));
           setPoidsDisplay(normalizeKgDisplay(userData));
+          setShowTestOffer(
+            shouldShowClientTestOffer(userData, a.isSubscribedClient)
+          );
         }
         const txSnap = await getDocs(
           query(collection(getFirebaseFirestore(), "transactions"), where("userId", "==", u.uid))
@@ -371,8 +394,8 @@ export default function EspaceClientPage() {
         <EspaceClientStatusPanel
           firstName={firstName}
           subscriptionDisplay={subscriptionDisplay}
-          collectesDisplay={subscribed ? collectesDisplay : "0"}
-          poidsDisplay={subscribed ? poidsDisplay : "0 kg"}
+          collectesDisplay={collectesDisplay}
+          poidsDisplay={poidsDisplay}
           subscribedHint={subscribed}
         />
 
@@ -394,6 +417,7 @@ export default function EspaceClientPage() {
         <ClientProductCatalog
           subscribed={subscribed}
           currentRole={access.role}
+          showTestOffer={showTestOffer}
         />
 
         <section

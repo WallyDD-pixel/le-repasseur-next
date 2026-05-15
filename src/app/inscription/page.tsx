@@ -5,38 +5,175 @@ import Link from "next/link";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
+import {
+  isPostalCodeCovered,
+  normalizePostalCode,
+  postalCodeCoverageStatus,
+} from "@/lib/coveredPostalCodes";
+import {
+  InscriptionFormFields,
+  type InscriptionFormValues,
+} from "@/components/inscription/InscriptionFormFields";
 import { PageShell } from "@/components/shell/PageShell";
-import { Input, Label, PrimaryButton } from "@/components/ui/FormField";
+
+type SuccessState = { kind: "out_of_zone"; ville: string; codePostal: string };
 
 export default function InscriptionPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [prenom, setPrenom] = useState("");
-  const [nom, setNom] = useState("");
+  const [values, setValues] = useState<InscriptionFormValues>({
+    nom: "",
+    prenom: "",
+    numero: "",
+    societe: "",
+    voie: "",
+    email: "",
+    complementAdresse: "",
+    password: "",
+    passwordConfirm: "",
+    codePostal: "",
+    ville: "",
+    adresseSecondaire: "non",
+    numero2: "",
+    voie2: "",
+    complementAdresse2: "",
+    codePostal2: "",
+    ville2: "",
+    telephone: "",
+    acceptCgu: false,
+  });
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<SuccessState | null>(null);
+
+  const mainCpStatus = postalCodeCoverageStatus(values.codePostal);
+  const secondaryCpStatus = postalCodeCoverageStatus(values.codePostal2);
+  const horsSecteur = mainCpStatus === "not_covered";
+
+  const set = {
+    nom: (v: string) => setValues((s) => ({ ...s, nom: v })),
+    prenom: (v: string) => setValues((s) => ({ ...s, prenom: v })),
+    numero: (v: string) => setValues((s) => ({ ...s, numero: v })),
+    societe: (v: string) => setValues((s) => ({ ...s, societe: v })),
+    voie: (v: string) => setValues((s) => ({ ...s, voie: v })),
+    email: (v: string) => setValues((s) => ({ ...s, email: v })),
+    complementAdresse: (v: string) => setValues((s) => ({ ...s, complementAdresse: v })),
+    password: (v: string) => setValues((s) => ({ ...s, password: v })),
+    passwordConfirm: (v: string) => setValues((s) => ({ ...s, passwordConfirm: v })),
+    codePostal: (v: string) => setValues((s) => ({ ...s, codePostal: v })),
+    ville: (v: string) => setValues((s) => ({ ...s, ville: v })),
+    adresseSecondaire: (v: "non" | "oui") =>
+      setValues((s) => ({ ...s, adresseSecondaire: v })),
+    numero2: (v: string) => setValues((s) => ({ ...s, numero2: v })),
+    voie2: (v: string) => setValues((s) => ({ ...s, voie2: v })),
+    complementAdresse2: (v: string) =>
+      setValues((s) => ({ ...s, complementAdresse2: v })),
+    codePostal2: (v: string) => setValues((s) => ({ ...s, codePostal2: v })),
+    ville2: (v: string) => setValues((s) => ({ ...s, ville2: v })),
+    telephone: (v: string) => setValues((s) => ({ ...s, telephone: v })),
+    acceptCgu: (v: boolean) => setValues((s) => ({ ...s, acceptCgu: v })),
+  };
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (values.password !== values.passwordConfirm) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    if (values.password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+    if (!values.acceptCgu) {
+      setError("Vous devez accepter les conditions générales d’utilisation.");
+      return;
+    }
+
+    const cp = normalizePostalCode(values.codePostal);
+    if (!/^\d{5}$/.test(cp)) {
+      setError("Code postal invalide (5 chiffres).");
+      return;
+    }
+
+    const wantsSecondary = values.adresseSecondaire === "oui";
+    let cp2 = "";
+    if (wantsSecondary) {
+      if (!values.numero2.trim() || !values.voie2.trim() || !values.ville2.trim()) {
+        setError("Renseignez l’adresse secondaire (N°, voie et ville).");
+        return;
+      }
+      cp2 = normalizePostalCode(values.codePostal2);
+      if (!/^\d{5}$/.test(cp2)) {
+        setError("Code postal de l’adresse secondaire invalide (5 chiffres).");
+        return;
+      }
+    }
+
+    const covered = isPostalCodeCovered(cp);
     setLoading(true);
+
     try {
       const auth = getFirebaseAuth();
       const db = getFirebaseFirestore();
       const cred = await createUserWithEmailAndPassword(
         auth,
-        email.trim(),
-        password
+        values.email.trim(),
+        values.password
       );
+
+      const now = serverTimestamp();
       await setDoc(doc(db, "users", cred.user.uid), {
-        email: email.trim(),
-        prenom: prenom.trim(),
-        nom: nom.trim(),
-        role: "aucun",
-        createdAt: serverTimestamp(),
-        dateInscription: serverTimestamp(),
+        email: values.email.trim(),
+        nom: values.nom.trim(),
+        prenom: values.prenom.trim(),
+        numero: values.numero.trim(),
+        societe: values.societe.trim(),
+        voie: values.voie.trim(),
+        complementAdresse: values.complementAdresse.trim(),
+        codePostal: cp,
+        ville: values.ville.trim(),
+        telephone: values.telephone.trim(),
+        adresseSecondaire: wantsSecondary,
+        ...(wantsSecondary
+          ? {
+              adresseSecondaireDetails: {
+                numero: values.numero2.trim(),
+                voie: values.voie2.trim(),
+                complementAdresse: values.complementAdresse2.trim(),
+                codePostal: cp2,
+                ville: values.ville2.trim(),
+              },
+            }
+          : {}),
+        secteurCouvert: covered,
+        role: covered ? "aucun" : "attente_secteur",
+        reservations: 0,
+        collectes: 0,
+        ...(covered
+          ? { eligibleTestOffer: true, testOfferUsed: false }
+          : {}),
+        accountStatus: "active",
+        accountClosed: false,
+        acceptCgu: true,
+        cguAcceptedAt: now,
+        inscriptionSource: "web",
+        createdAt: now,
+        dateInscription: now,
+        inscriptionDate: now,
+        updatedAt: now,
       });
-      window.location.href = "/espace-client";
+
+      if (covered) {
+        window.location.href = "/espace-client?welcome=1";
+        return;
+      }
+
+      setSuccess({
+        kind: "out_of_zone",
+        ville: values.ville.trim(),
+        codePostal: cp,
+      });
     } catch (err: unknown) {
       const code =
         err && typeof err === "object" && "code" in err
@@ -54,68 +191,71 @@ export default function InscriptionPage() {
     }
   }
 
-  return (
-    <PageShell
-      title="Créer un compte"
-      subtitle="Rejoignez Le Repasseur en quelques secondes."
-    >
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="prenom">Prénom</Label>
-            <Input
-              id="prenom"
-              required
-              value={prenom}
-              onChange={(e) => setPrenom(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="nom">Nom</Label>
-            <Input
-              id="nom"
-              required
-              value={nom}
-              onChange={(e) => setNom(e.target.value)}
-            />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="email">E-mail</Label>
-          <Input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="password">Mot de passe</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        {error ? (
-          <p className="text-sm font-semibold text-red-600" role="alert">
-            {error}
+  if (success?.kind === "out_of_zone") {
+    return (
+      <PageShell
+        title="Inscription enregistrée"
+        subtitle="Merci pour votre confiance."
+        maxWidth="lg"
+      >
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-slate-800">
+          <p className="text-lg font-semibold text-emerald-900">
+            Votre inscription a bien été prise en compte.
           </p>
-        ) : null}
-        <PrimaryButton type="submit" loading={loading}>
-          S&apos;inscrire
-        </PrimaryButton>
-      </form>
-      <p className="mt-8 border-t border-slate-200/80 pt-6 text-center text-sm text-slate-600">
-        Déjà inscrit ?{" "}
-        <Link href="/connexion" className="font-semibold text-[#10294B] hover:underline">
-          Connexion
-        </Link>
-      </p>
+          <p className="mt-3 leading-relaxed">
+            Le service n’est pas encore disponible pour le code postal{" "}
+            <strong>{success.codePostal}</strong>
+            {success.ville ? (
+              <>
+                {" "}
+                (<strong>{success.ville}</strong>)
+              </>
+            ) : null}
+            . Le service n&apos;est pas encore disponible dans votre ville : nous
+            vous enverrons une notification dès l&apos;ouverture de votre secteur.
+          </p>
+          <p className="mt-4 text-sm text-slate-600">
+            En attendant, vous pouvez consulter la{" "}
+            <Link href="/communes" className="font-semibold text-[#CE2029] hover:underline">
+              liste des communes couvertes
+            </Link>
+            .
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/connexion"
+              className="rounded-xl bg-[#10294B] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#0c203d]"
+            >
+              Se connecter
+            </Link>
+            <Link
+              href="/"
+              className="rounded-xl border-2 border-[#CE2029] px-6 py-2.5 text-sm font-semibold text-[#CE2029] hover:bg-[#CE2029]/5"
+            >
+              Retour à l’accueil
+            </Link>
+          </div>
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell title="Créer un compte" showShellHeading={false} maxWidth="xl">
+      <h1 className="mb-8 text-center text-3xl font-bold text-[#10294B] md:text-4xl">
+        Créer un compte
+      </h1>
+
+      <InscriptionFormFields
+        values={values}
+        set={set}
+        mainCpStatus={mainCpStatus}
+        secondaryCpStatus={secondaryCpStatus}
+        horsSecteur={horsSecteur}
+        error={error}
+        loading={loading}
+        onSubmit={onSubmit}
+      />
     </PageShell>
   );
 }

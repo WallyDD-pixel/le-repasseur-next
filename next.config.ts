@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  /** Évite que Next prenne `~/package-lock.json` comme racine sur l’hébergement OVH. */
+  outputFileTracingRoot: appRoot,
   images: {
     remotePatterns: [
       {

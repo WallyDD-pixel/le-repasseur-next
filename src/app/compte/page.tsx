@@ -220,6 +220,31 @@ export default function ComptePage() {
       maxWidth="md"
     >
       <div className="space-y-6">
+        {access?.isWaitingSector ? (
+          <section className="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-sky-800">
+              Secteur en cours d&apos;ouverture
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-sky-900">
+              Votre inscription est bien enregistrée. Le service n&apos;est pas encore
+              disponible pour votre code postal
+              {user.codePostal ? (
+                <>
+                  {" "}
+                  (<strong>{user.codePostal}</strong>)
+                </>
+              ) : null}
+              . Vous serez notifié dès que nous interviendrons dans votre ville.
+            </p>
+            <Link
+              href="/communes"
+              className="mt-3 inline-block text-sm font-semibold text-[#CE2029] hover:underline"
+            >
+              Voir les communes couvertes
+            </Link>
+          </section>
+        ) : null}
+
         {primaryHref && primaryLabel ? (
           <Link
             href={primaryHref}

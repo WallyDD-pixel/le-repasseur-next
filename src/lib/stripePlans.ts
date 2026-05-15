@@ -3,15 +3,16 @@ import {
   CLIENT_SUBSCRIBER_PACK_ITEMS,
   CLIENT_SUBSCRIPTION_ITEMS,
 } from "@/lib/clientCatalog";
+import { TEST_PANIERE_RECAP_PLAN_ID } from "@/lib/testPaniereOffer";
 
 /** Identifiants d’offre connus du catalogue (récap legacy + métadonnées Stripe). */
-export const CHECKOUT_PLAN_IDS = new Set(
-  [
-    ...CLIENT_SUBSCRIPTION_ITEMS,
-    ...CLIENT_PACK_ITEMS,
-    ...CLIENT_SUBSCRIBER_PACK_ITEMS,
-  ].map((p) => p.recapPlanId)
-);
+export const CHECKOUT_PLAN_IDS = new Set([
+  TEST_PANIERE_RECAP_PLAN_ID,
+  "Essai 1€",
+  ...CLIENT_SUBSCRIPTION_ITEMS.map((p) => p.recapPlanId),
+  ...CLIENT_PACK_ITEMS.map((p) => p.recapPlanId),
+  ...CLIENT_SUBSCRIBER_PACK_ITEMS.map((p) => p.recapPlanId),
+]);
 
 export function isCheckoutPlanId(id: string): boolean {
   return CHECKOUT_PLAN_IDS.has(id);
@@ -23,6 +24,8 @@ export function isSubscriptionRecapPlan(planId: string): boolean {
 }
 
 const PLAN_TO_STRIPE_PRICE_ENV: Record<string, string> = {
+  [TEST_PANIERE_RECAP_PLAN_ID]: "STRIPE_PRICE_ESSAI_1EURO",
+  "Essai 1€": "STRIPE_PRICE_ESSAI_1EURO",
   Mino: "STRIPE_PRICE_MINO",
   Solo: "STRIPE_PRICE_SOLO",
   Duo: "STRIPE_PRICE_DUO",
@@ -43,6 +46,8 @@ export function stripePriceEnvVarNameForPlan(planId: string): string | undefined
  */
 export function stripePriceIdForPlan(planId: string): string | undefined {
   const map: Record<string, string | undefined> = {
+    [TEST_PANIERE_RECAP_PLAN_ID]: process.env.STRIPE_PRICE_ESSAI_1EURO,
+    "Essai 1€": process.env.STRIPE_PRICE_ESSAI_1EURO,
     Mino: process.env.STRIPE_PRICE_MINO,
     Solo: process.env.STRIPE_PRICE_SOLO,
     Duo: process.env.STRIPE_PRICE_DUO,

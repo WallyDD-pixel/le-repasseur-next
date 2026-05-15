@@ -97,7 +97,8 @@ export default function ModifierUtilisateurPage() {
             ? data.cp
             : ""
       );
-      const k = data.kg ?? data.poidsKg;
+      // Métier Firestore : `collectes` = quota kg, `reservations` = collectes restantes
+      const k = data.collectes ?? data.kg ?? data.poidsKg;
       setKg(typeof k === "number" ? String(k) : typeof k === "string" ? k : "");
       const r = data.reservations ?? data.nbReservations;
       setReservations(
@@ -134,7 +135,9 @@ export default function ModifierUtilisateurPage() {
         role: role.trim() || "aucun",
         telephone: telephone.trim(),
         codePostal: codePostal.trim(),
-        ...(kgNum != null && !Number.isNaN(kgNum) ? { kg: kgNum } : { kg: 0 }),
+        ...(kgNum != null && !Number.isNaN(kgNum)
+          ? { collectes: kgNum }
+          : { collectes: 0 }),
         ...(Number.isFinite(resNum) && resNum >= 0
           ? { reservations: resNum }
           : { reservations: 0 }),

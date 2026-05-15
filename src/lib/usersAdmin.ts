@@ -84,7 +84,14 @@ function coerceKg(data: Record<string, unknown>): {
   value: number | null;
   display: string;
 } {
-  const raw = pickFirst(data, ["kg", "poidsKg", "poids", "weightKg", "weight"]);
+  const raw = pickFirst(data, [
+    "collectes",
+    "kg",
+    "poidsKg",
+    "poids",
+    "weightKg",
+    "weight",
+  ]);
   if (typeof raw === "number" && Number.isFinite(raw)) {
     return { value: raw, display: String(raw) };
   }

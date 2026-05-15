@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import * as admin from "firebase-admin";
 
 import { TRANSACTIONS_COLLECTION } from "@/lib/activiteAdmin";
+import { isTestOfferPlanId } from "@/lib/testPaniereOffer";
 import { isSubscriptionRecapPlan } from "@/lib/stripePlans";
 import { getAdminFirestore, getFirebaseAdminApp } from "@/server/firebaseAdmin";
 import { verifyFirebaseUserIdToken } from "@/server/firebaseIdTokenVerify";
@@ -208,10 +209,29 @@ export async function POST(req: NextRequest) {
         );
         const kg = readPositiveNumber(planData.kg);
 
-        if (collectes != null) {
-          updates.reservations = admin.firestore.FieldValue.increment(collectes);
+        const addReservations =
+          collectes ??
+          (planId && isTestOfferPlanId(planId)
+            ? readPositiveNumber(planData.collecte ?? planData.collectes)
+            : null);
+        const addKg =
+          kg ??
+          (planId && isTestOfferPlanId(planId)
+            ? readPositiveNumber(planData.kg)
+            : null);
+
+        if (addReservations != null) {
+          updates.reservations =
+            admin.firestore.FieldValue.increment(addReservations);
         }
-        if (kg != null) updates.collectes = admin.firestore.FieldValue.increment(kg);
+        if (addKg != null) {
+          updates.collectes = admin.firestore.FieldValue.increment(addKg);
+        }
+      }
+
+      if (planId && isTestOfferPlanId(planId)) {
+        updates.testOfferUsed = true;
+        updates.eligibleTestOffer = false;
       }
 
       await userRef.set(updates, { merge: true });

@@ -8,6 +8,8 @@ export type UserAccessResult = {
   isAdmin: boolean;
   isSubscribedClient: boolean;
   isPendingSignup: boolean;
+  /** Inscrit hors secteur : compte créé, en attente d’ouverture locale. */
+  isWaitingSector: boolean;
   unknownRoleError?: string;
 };
 
@@ -30,10 +32,22 @@ export async function getUserAccess(uid: string): Promise<UserAccessResult> {
       isAdmin: false,
       isSubscribedClient: false,
       isPendingSignup: false,
+      isWaitingSector: false,
     };
   }
 
   const role = userSnap.data().role as string | undefined;
+
+  if (role === "attente_secteur") {
+    return {
+      userExists: true,
+      role,
+      isAdmin: false,
+      isSubscribedClient: false,
+      isPendingSignup: false,
+      isWaitingSector: true,
+    };
+  }
 
   if (role === "admin") {
     return {
@@ -42,6 +56,7 @@ export async function getUserAccess(uid: string): Promise<UserAccessResult> {
       isAdmin: true,
       isSubscribedClient: false,
       isPendingSignup: false,
+      isWaitingSector: false,
     };
   }
   if (role === "aucun") {
@@ -51,6 +66,7 @@ export async function getUserAccess(uid: string): Promise<UserAccessResult> {
       isAdmin: false,
       isSubscribedClient: false,
       isPendingSignup: true,
+      isWaitingSector: false,
     };
   }
   if (role && authorizedRoles.includes(role) && role !== "aucun") {
@@ -60,6 +76,7 @@ export async function getUserAccess(uid: string): Promise<UserAccessResult> {
       isAdmin: false,
       isSubscribedClient: true,
       isPendingSignup: false,
+      isWaitingSector: false,
     };
   }
 
@@ -69,6 +86,7 @@ export async function getUserAccess(uid: string): Promise<UserAccessResult> {
     isAdmin: false,
     isSubscribedClient: false,
     isPendingSignup: false,
+    isWaitingSector: false,
     unknownRoleError: `Rôle non reconnu : ${role ?? "—"}`,
   };
 }
@@ -86,6 +104,9 @@ export async function resolvePostLoginHref(uid: string): Promise<{
   }
   if (access.isAdmin) {
     return { href: "/admin" };
+  }
+  if (access.isWaitingSector) {
+    return { href: "/compte" };
   }
   if (access.isSubscribedClient || access.isPendingSignup) {
     return { href: "/espace-client" };
