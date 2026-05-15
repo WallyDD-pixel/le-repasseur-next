@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -17,7 +17,7 @@ function str(v: unknown): string {
   return String(v);
 }
 
-export default function ComptePage() {
+function ComptePageContent() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<{
     uid: string;
@@ -395,5 +395,19 @@ export default function ComptePage() {
         </button>
       </div>
     </PageShell>
+  );
+}
+
+export default function ComptePage() {
+  return (
+    <Suspense
+      fallback={
+        <PageShell title="Mon espace" subtitle="Chargement de votre profil…">
+          <p className="py-10 text-center text-slate-500">Patientez…</p>
+        </PageShell>
+      }
+    >
+      <ComptePageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -184,7 +184,7 @@ function formatFirstName(
   return "vous";
 }
 
-export default function EspaceClientPage() {
+function EspaceClientPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
@@ -493,5 +493,19 @@ export default function EspaceClientPage() {
         </button>
       </div>
     </PageShell>
+  );
+}
+
+export default function EspaceClientPage() {
+  return (
+    <Suspense
+      fallback={
+        <PageShell title="Mon espace" subtitle="Chargement…">
+          <p className="py-10 text-center text-slate-500">Patientez…</p>
+        </PageShell>
+      }
+    >
+      <EspaceClientPageContent />
+    </Suspense>
   );
 }
