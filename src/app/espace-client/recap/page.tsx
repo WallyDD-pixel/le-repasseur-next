@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageShell } from "@/components/shell/PageShell";
+import { BackLink } from "@/components/ui/BackLink";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { requestStripeCheckoutSession } from "@/lib/checkoutClient";
 import {
@@ -86,7 +88,7 @@ function NextSteps({ entry }: { entry: ClientCatalogEntry }) {
       </h3>
       <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-slate-700">
         <li>
-          En cliquant sur « Payer sur Stripe », vous êtes redirigé vers une page
+          En cliquant sur « Payer », vous êtes redirigé vers une page
           de paiement <strong>hébergée par Stripe</strong> (carte bancaire,
           environnement sécurisé).
         </li>
@@ -163,12 +165,9 @@ function RecapContent() {
           Choisissez une offre depuis l&apos;espace client.
         </p>
         <div className="mt-8 flex justify-center">
-          <Link
-            href="/espace-client"
-            className="rounded-xl bg-[#10294B] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#10294B]/90"
-          >
+          <ButtonLink href="/espace-client" variant="navy" size="md">
             Retour à l&apos;espace client
-          </Link>
+          </ButtonLink>
         </div>
       </PageShell>
     );
@@ -184,12 +183,9 @@ function RecapContent() {
         contentVariant="flush"
       >
         <div className="flex justify-center">
-          <Link
-            href="/espace-client"
-            className="rounded-xl border-2 border-[#10294B]/25 px-6 py-3 text-sm font-bold text-[#10294B] transition hover:bg-[#10294B]/5"
-          >
+          <ButtonLink href="/espace-client" variant="secondary" size="md">
             Retour à l&apos;espace client
-          </Link>
+          </ButtonLink>
         </div>
       </PageShell>
     );
@@ -218,8 +214,6 @@ function RecapContent() {
     window.location.assign(result.redirectUrl);
   }
 
-  const primaryLabel = "Payer sur Stripe";
-
   return (
     <PageShell
       title="Récapitulatif avant paiement"
@@ -229,6 +223,8 @@ function RecapContent() {
       contentVariant="flush"
     >
       <div className="space-y-8">
+        <BackLink href="/espace-client" label="Retour à l’espace client" />
+
         {checkoutNotice === "cancel" ? (
           <p
             className="rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-center text-sm text-amber-950"
@@ -242,23 +238,33 @@ function RecapContent() {
 
         <NextSteps entry={entry} />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <button
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-stretch sm:justify-between">
+          <Button
             type="button"
+            variant="secondary"
+            size="lg"
+            className="order-2 sm:order-1 sm:min-w-[200px]"
             onClick={() => router.push("/espace-client")}
-            className="order-2 rounded-xl border-2 border-[#10294B]/20 px-6 py-3.5 text-center text-sm font-bold text-[#10294B] transition hover:bg-[#10294B]/5 sm:order-1"
           >
             Modifier mon choix
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
+            size="lg"
+            loading={payPending}
+            className="order-1 sm:order-2 sm:min-w-[min(100%,280px)] sm:flex-1"
             onClick={onPay}
-            disabled={payPending}
-            className="order-1 inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#CE2029] to-[#c41e26] px-8 text-center text-sm font-bold text-white shadow-lg shadow-[#CE2029]/25 transition hover:from-[#b91b24] hover:to-[#a91820] disabled:cursor-wait disabled:opacity-85 sm:order-2 sm:max-w-md sm:flex-none"
           >
-            {payPending ? "Connexion à Stripe…" : primaryLabel}
-            <span aria-hidden>→</span>
-          </button>
+            {payPending ? (
+              "Paiement en cours…"
+            ) : (
+              <>
+                Payer
+                <span aria-hidden>→</span>
+              </>
+            )}
+          </Button>
         </div>
 
         {payError ? (

@@ -58,12 +58,7 @@ function GateInner({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const allowed =
-        access.isAdmin ||
-        access.isSubscribedClient ||
-        access.isPendingSignup;
-
-      if (!allowed) {
+      if (!access.isAdmin && !access.userExists) {
         router.replace("/compte");
         return;
       }

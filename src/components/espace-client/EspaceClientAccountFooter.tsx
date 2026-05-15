@@ -1,15 +1,14 @@
- "use client";
+"use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { getFirebaseAuth } from "@/lib/firebase";
+import { Button, ButtonLink } from "@/components/ui/Button";
 
 export function EspaceClientAccountFooter({
   subscribed,
 }: {
   subscribed: boolean;
 }) {
-  const [busy, setBusy] = useState(false);
   const [portalBusy, setPortalBusy] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,103 +57,47 @@ export function EspaceClientAccountFooter({
     }
   }
 
-  async function onCancelSubscription() {
-    setInfo(null);
-    setError(null);
-    if (!subscribed) {
-      setError("Aucun abonnement actif à résilier.");
-      return;
-    }
-    const ok = window.confirm(
-      "Confirmer la résiliation ? Votre abonnement restera actif jusqu'à la fin de la période en cours."
-    );
-    if (!ok) return;
-
-    const u = getFirebaseAuth().currentUser;
-    if (!u) {
-      setError("Session expirée. Reconnectez-vous puis réessayez.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const idToken = await u.getIdToken();
-      const res = await fetch("/api/checkout/cancel-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        ok?: boolean;
-        currentPeriodEnd?: number | null;
-      };
-      if (!res.ok || !data.ok) {
-        setError(
-          typeof data.error === "string"
-            ? data.error
-            : "Résiliation impossible pour le moment."
-        );
-        return;
-      }
-      const endDate =
-        typeof data.currentPeriodEnd === "number" && data.currentPeriodEnd > 0
-          ? new Date(data.currentPeriodEnd * 1000).toLocaleDateString("fr-FR")
-          : null;
-      setInfo(
-        endDate
-          ? `Résiliation enregistrée. L’abonnement prendra fin le ${endDate}.`
-          : "Résiliation enregistrée. L’abonnement prendra fin à la prochaine échéance."
-      );
-    } catch {
-      setError("Erreur réseau. Réessayez dans un instant.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <nav
       className="border-t-2 border-[#10294B] pt-6"
       aria-label="Gestion du compte et de l’abonnement"
     >
-      <ul className="flex flex-col gap-3 pl-1 sm:pl-2">
+      <ul className="flex flex-col gap-2.5 sm:max-w-md">
         <li>
-          <Link
+          <ButtonLink
             href="/compte"
-            className="inline-block text-sm font-bold text-[#10294B] transition hover:underline sm:text-base"
+            variant="secondary"
+            size="md"
+            fullWidth
+            className="!justify-start"
           >
             Modifier mon compte
-          </Link>
+          </ButtonLink>
         </li>
         <li>
-          <Link
+          <ButtonLink
             href="/compte?action=close"
-            className="inline-block text-sm font-bold text-[#10294B] transition hover:underline sm:text-base"
+            variant="outline"
+            size="md"
+            fullWidth
+            className="!justify-start"
           >
             Supprimer mon compte
-          </Link>
+          </ButtonLink>
         </li>
         <li>
-          <button
+          <Button
             type="button"
+            variant="navy"
+            size="md"
+            fullWidth
+            className="!justify-start"
             onClick={() => void onOpenStripePortal()}
-            disabled={portalBusy || !subscribed}
-            className="inline-block text-left text-sm font-bold text-[#10294B] transition hover:underline disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
+            loading={portalBusy}
+            disabled={!subscribed}
           >
-            {portalBusy
-              ? "Ouverture du portail Stripe…"
-              : "Gérer mon abonnement sur Stripe"}
-          </button>
-        </li>
-        <li>
-          <button
-            type="button"
-            onClick={() => void onCancelSubscription()}
-            disabled={busy || portalBusy || !subscribed}
-            className="inline-block text-left text-sm font-bold text-[#10294B] transition hover:underline disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
-          >
-            {busy ? "Résiliation en cours…" : "Résilier mon abonnement"}
-          </button>
+            Informations de paiement
+          </Button>
         </li>
       </ul>
       {info ? (

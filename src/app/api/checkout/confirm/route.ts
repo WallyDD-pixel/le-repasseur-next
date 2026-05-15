@@ -3,8 +3,13 @@ import Stripe from "stripe";
 import * as admin from "firebase-admin";
 
 import { TRANSACTIONS_COLLECTION } from "@/lib/activiteAdmin";
-import { isTestOfferPlanId } from "@/lib/testPaniereOffer";
+import {
+  findPlanOrProductData,
+  resolvePlanCredits,
+} from "@/lib/planCreditsResolve";
+import { planIdFromStripeMetadata } from "@/lib/stripeMetadataLegacy";
 import { isSubscriptionRecapPlan } from "@/lib/stripePlans";
+import { isTestOfferPlanId } from "@/lib/testPaniereOffer";
 import { getAdminFirestore, getFirebaseAdminApp } from "@/server/firebaseAdmin";
 import { verifyFirebaseUserIdToken } from "@/server/firebaseIdTokenVerify";
 import { resolveStripeSecret } from "@/server/stripeConfigResolve";
@@ -13,66 +18,6 @@ function readString(body: unknown, key: string): string {
   if (typeof body !== "object" || body === null) return "";
   const raw = (body as Record<string, unknown>)[key];
   return typeof raw === "string" ? raw.trim() : "";
-}
-
-function readPositiveNumber(raw: unknown): number | null {
-  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
-  if (typeof raw === "string") {
-    const n = Number.parseFloat(raw.replace(",", ".").trim());
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  return null;
-}
-
-async function findPlanOrProductData(
-  db: admin.firestore.Firestore,
-  planId: string,
-  amountEuros: number | null
-): Promise<Record<string, unknown>> {
-  if (!planId && amountEuros == null) return {};
-
-  // 1) Formules abonnement (id == planId)
-  if (planId) {
-    const a = await db.collection("abonnements").doc(planId).get();
-    if (a.exists) return a.data() as Record<string, unknown>;
-  }
-
-  // 2) Produits : id == planId
-  if (planId) {
-    const p = await db.collection("produits").doc(planId).get();
-    if (p.exists) return p.data() as Record<string, unknown>;
-  }
-
-  // 3) Produits : nom / recapPlanId == planId
-  if (planId) {
-    const byNom = await db
-      .collection("produits")
-      .where("nom", "==", planId)
-      .limit(1)
-      .get();
-    if (!byNom.empty) return byNom.docs[0]!.data() as Record<string, unknown>;
-
-    const byRecap = await db
-      .collection("produits")
-      .where("recapPlanId", "==", planId)
-      .limit(1)
-      .get();
-    if (!byRecap.empty) return byRecap.docs[0]!.data() as Record<string, unknown>;
-  }
-
-  // 4) Heuristique par prix (utile quand planId est "Pack 5 kg" mais doc legacy diffère).
-  if (amountEuros != null) {
-    const all = await db.collection("produits").get();
-    for (const d of all.docs) {
-      const data = d.data() as Record<string, unknown>;
-      const p = readPositiveNumber(data.prix ?? data.price);
-      if (p != null && Math.abs(p - amountEuros) < 0.001) {
-        return data;
-      }
-    }
-  }
-
-  return {};
 }
 
 export async function POST(req: NextRequest) {
@@ -137,7 +82,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const planId = session.metadata?.planId?.trim() || "";
+  const planId = planIdFromStripeMetadata(session.metadata);
   const paid = session.payment_status === "paid";
   if (!paid) {
     return NextResponse.json(
@@ -183,13 +128,16 @@ export async function POST(req: NextRequest) {
   if (stripeSubscriptionId) txPayload.stripeSubscriptionId = stripeSubscriptionId;
   if (stripeInvoiceId) txPayload.stripeInvoiceId = stripeInvoiceId;
 
+  let creditsApplied: { reservations: number; kg: number } | null = null;
+
   try {
     const txRef = db.collection(TRANSACTIONS_COLLECTION).doc(session.id);
     const txSnap = await txRef.get();
     const firstConfirmation = !txSnap.exists;
-
-    // Idempotence simple : docId = session.id
-    await txRef.set(txPayload, { merge: true });
+    const txExisting = txSnap.exists
+      ? (txSnap.data() as Record<string, unknown>)
+      : {};
+    const creditsAlreadyOnTx = txExisting.creditsApplied === true;
 
     if (planId) {
       const userRef = db.collection("users").doc(user.uid);
@@ -198,27 +146,11 @@ export async function POST(req: NextRequest) {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
-      // Métier demandé:
-      // - collectes/collecte => users.reservations
-      // - kg                => users.collectes
-      if (firstConfirmation) {
+      // Métier : collectes/collecte du plan → users.reservations ; kg → users.collectes
+      const shouldApplyCredits = firstConfirmation || !creditsAlreadyOnTx;
+      if (shouldApplyCredits) {
         const planData = await findPlanOrProductData(db, planId, amountEuros);
-
-        const collectes = readPositiveNumber(
-          planData.collectes ?? planData.collecte
-        );
-        const kg = readPositiveNumber(planData.kg);
-
-        const addReservations =
-          collectes ??
-          (planId && isTestOfferPlanId(planId)
-            ? readPositiveNumber(planData.collecte ?? planData.collectes)
-            : null);
-        const addKg =
-          kg ??
-          (planId && isTestOfferPlanId(planId)
-            ? readPositiveNumber(planData.kg)
-            : null);
+        const { addReservations, addKg } = resolvePlanCredits(planId, planData);
 
         if (addReservations != null) {
           updates.reservations =
@@ -227,6 +159,13 @@ export async function POST(req: NextRequest) {
         if (addKg != null) {
           updates.collectes = admin.firestore.FieldValue.increment(addKg);
         }
+        if (addReservations != null || addKg != null) {
+          creditsApplied = {
+            reservations: addReservations ?? 0,
+            kg: addKg ?? 0,
+          };
+          txPayload.creditsApplied = true;
+        }
       }
 
       if (planId && isTestOfferPlanId(planId)) {
@@ -234,7 +173,10 @@ export async function POST(req: NextRequest) {
         updates.eligibleTestOffer = false;
       }
 
+      await txRef.set(txPayload, { merge: true });
       await userRef.set(updates, { merge: true });
+    } else {
+      await txRef.set(txPayload, { merge: true });
     }
   } catch (e) {
     const msg =
@@ -247,6 +189,7 @@ export async function POST(req: NextRequest) {
     paid: true,
     planId: planId || null,
     subscriptionActivated: Boolean(isSub && planId),
+    creditsApplied,
   });
 }
 

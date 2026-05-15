@@ -68,12 +68,12 @@ export function AppFooter() {
                 </a>
               </li>
               <li>
-                <a
-                  href={LEGACY("/preparation.html")}
+                <Link
+                  href="/preparation"
                   className="transition hover:text-[#10294B] hover:underline"
                 >
                   Bien préparer sa collecte
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="/#choisir" className="transition hover:text-[#10294B] hover:underline">

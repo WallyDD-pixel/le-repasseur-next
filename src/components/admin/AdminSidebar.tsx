@@ -27,11 +27,11 @@ function internalNavActive(pathname: string, href: string): boolean {
   if (href === "/admin/partenaires") {
     return pathname.startsWith("/admin/partenaires");
   }
+  if (href === "/admin/reservations") {
+    return pathname.startsWith("/admin/reservations");
+  }
   if (href === "/admin/messages") {
     return pathname === "/admin/messages" || pathname.startsWith("/admin/messages/");
-  }
-  if (href === "/admin/resiliations") {
-    return pathname.startsWith("/admin/resiliations");
   }
   if (href === "/admin/emails") {
     return pathname.startsWith("/admin/emails");

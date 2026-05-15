@@ -5,10 +5,19 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { CompteAddressFields } from "@/components/compte/CompteAddressFields";
+import { PageShell } from "@/components/shell/PageShell";
+import { BackLink } from "@/components/ui/BackLink";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Input, Label, PrimaryButton } from "@/components/ui/FormField";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 import { getUserAccess } from "@/lib/authRedirect";
-import { PageShell } from "@/components/shell/PageShell";
-import { Input, Label, PrimaryButton } from "@/components/ui/FormField";
+import {
+  buildUserProfileUpdate,
+  userProfileFromFirestore,
+  validateUserProfileForm,
+  type UserProfileForm,
+} from "@/lib/userProfileFirestore";
 
 function str(v: unknown): string {
   if (v == null) return "";
@@ -17,33 +26,58 @@ function str(v: unknown): string {
   return String(v);
 }
 
+const emptyProfile: UserProfileForm = {
+  prenom: "",
+  nom: "",
+  telephone: "",
+  societe: "",
+  numero: "",
+  voie: "",
+  complementAdresse: "",
+  codePostal: "",
+  ville: "",
+  adresseSecondaire: "non",
+  numero2: "",
+  voie2: "",
+  complementAdresse2: "",
+  codePostal2: "",
+  ville2: "",
+};
+
 function ComptePageContent() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<{
     uid: string;
     email: string | null;
     role?: string;
-    prenom: string;
-    nom: string;
-    telephone: string;
-    codePostal: string;
     accountClosed: boolean;
   } | null>(null);
+  const [form, setForm] = useState<UserProfileForm>(emptyProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
   const [reactivating, setReactivating] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [prenom, setPrenom] = useState("");
-  const [nom, setNom] = useState("");
-  const [telephone, setTelephone] = useState("");
-  const [codePostal, setCodePostal] = useState("");
   const [access, setAccess] = useState<Awaited<
     ReturnType<typeof getUserAccess>
   > | null>(null);
 
   const wantsCloseAction = searchParams.get("action") === "close";
+
+  const backHref =
+    access?.isAdmin
+      ? "/admin"
+      : access?.isSubscribedClient || access?.isPendingSignup
+        ? "/espace-client"
+        : "/";
+
+  const backLabel =
+    access?.isAdmin
+      ? "Retour à l’administration"
+      : access?.isSubscribedClient || access?.isPendingSignup
+        ? "Retour à l’espace client"
+        : "Retour à l’accueil";
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -62,10 +96,6 @@ function ComptePageContent() {
         ? (snap.data() as Record<string, unknown>)
         : {};
       const role = str(data.role) || undefined;
-      const p = str(data.prenom);
-      const n = str(data.nom);
-      const tel = str(data.telephone || data.tel || data.phone);
-      const cp = str(data.codePostal || data.cp);
       const closed =
         data.accountClosed === true ||
         data.compteFerme === true ||
@@ -75,16 +105,11 @@ function ComptePageContent() {
         uid: u.uid,
         email: u.email,
         role,
-        prenom: p,
-        nom: n,
-        telephone: tel,
-        codePostal: cp,
         accountClosed: closed,
       });
-      setPrenom(p);
-      setNom(n);
-      setTelephone(tel);
-      setCodePostal(cp);
+      setForm(
+        snap.exists() ? userProfileFromFirestore(data) : emptyProfile
+      );
 
       const a = await getUserAccess(u.uid);
       setAccess(a);
@@ -92,32 +117,29 @@ function ComptePageContent() {
     });
   }, [searchParams]);
 
+  function patchForm(patch: Partial<UserProfileForm>) {
+    setForm((prev) => ({ ...prev, ...patch }));
+  }
+
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
+
+    const validation = validateUserProfileForm(form);
+    if (!validation.ok) {
+      setError(validation.error);
+      return;
+    }
+
     setSaving(true);
     setInfo(null);
     setError(null);
     try {
       const db = getFirebaseFirestore();
       await updateDoc(doc(db, "users", user.uid), {
-        prenom: prenom.trim(),
-        nom: nom.trim(),
-        telephone: telephone.trim(),
-        codePostal: codePostal.trim(),
+        ...buildUserProfileUpdate(form),
         updatedAt: serverTimestamp(),
       });
-      setUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              prenom: prenom.trim(),
-              nom: nom.trim(),
-              telephone: telephone.trim(),
-              codePostal: codePostal.trim(),
-            }
-          : prev
-      );
       setInfo("Profil mis à jour.");
     } catch {
       setError("Enregistrement impossible. Réessayez.");
@@ -188,38 +210,26 @@ function ComptePageContent() {
         title="Mon espace"
         subtitle="Connectez-vous pour accéder à votre tableau de bord."
       >
+        <BackLink href="/" className="mb-6" />
         <p className="text-center text-slate-600">
           Vous n&apos;êtes pas connecté.
         </p>
-        <Link
-          href="/connexion"
-          className="mt-8 block w-full rounded-xl bg-[#CE2029] py-3.5 text-center text-base font-bold text-white shadow-lg shadow-[#CE2029]/20 transition hover:bg-[#b91b24]"
-        >
+        <ButtonLink href="/connexion" variant="primary" size="lg" fullWidth className="mt-8">
           Se connecter
-        </Link>
+        </ButtonLink>
       </PageShell>
     );
   }
 
-  const primaryHref = access?.isAdmin
-    ? "/admin"
-    : access?.isSubscribedClient || access?.isPendingSignup
-      ? "/espace-client"
-      : null;
-
-  const primaryLabel = access?.isAdmin
-    ? "Administration"
-    : access?.isSubscribedClient || access?.isPendingSignup
-      ? "Mon espace client"
-      : null;
-
   return (
     <PageShell
       title="Mon compte"
-      subtitle="Modifiez vos informations et gérez l’état de votre compte."
-      maxWidth="md"
+      subtitle="Modifiez vos informations personnelles et vos adresses."
+      maxWidth="lg"
     >
       <div className="space-y-6">
+        <BackLink href={backHref} label={backLabel} />
+
         {access?.isWaitingSector ? (
           <section className="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4">
             <p className="text-xs font-bold uppercase tracking-wider text-sky-800">
@@ -228,10 +238,10 @@ function ComptePageContent() {
             <p className="mt-1 text-sm leading-relaxed text-sky-900">
               Votre inscription est bien enregistrée. Le service n&apos;est pas encore
               disponible pour votre code postal
-              {user.codePostal ? (
+              {form.codePostal ? (
                 <>
                   {" "}
-                  (<strong>{user.codePostal}</strong>)
+                  (<strong>{form.codePostal}</strong>)
                 </>
               ) : null}
               . Vous serez notifié dès que nous interviendrons dans votre ville.
@@ -243,15 +253,6 @@ function ComptePageContent() {
               Voir les communes couvertes
             </Link>
           </section>
-        ) : null}
-
-        {primaryHref && primaryLabel ? (
-          <Link
-            href={primaryHref}
-            className="block w-full rounded-xl bg-[#CE2029] py-3.5 text-center text-base font-bold text-white shadow-lg shadow-[#CE2029]/20 transition hover:bg-[#b91b24]"
-          >
-            {primaryLabel}
-          </Link>
         ) : null}
 
         {info ? (
@@ -273,14 +274,16 @@ function ComptePageContent() {
             <p className="mt-1 text-sm text-amber-900">
               Votre compte est actuellement fermé. Vous pouvez le réactiver à tout moment.
             </p>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => void reactivateAccount()}
-              disabled={reactivating}
-              className="mt-3 rounded-xl border-2 border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100 disabled:opacity-60"
+              loading={reactivating}
+              className="mt-3 !border-amber-300 !text-amber-900 hover:!bg-amber-100"
             >
-              {reactivating ? "Réactivation…" : "Réactiver mon compte"}
-            </button>
+              Réactiver mon compte
+            </Button>
           </section>
         ) : null}
 
@@ -292,14 +295,16 @@ function ComptePageContent() {
             <p className="mt-1 text-sm text-red-900">
               Cette action ferme votre compte, mais vous pourrez le réactiver plus tard.
             </p>
-            <button
+            <Button
               type="button"
+              variant="danger"
+              size="sm"
               onClick={() => void closeAccount()}
-              disabled={closing}
-              className="mt-3 rounded-xl bg-[#CE2029] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#b91b24] disabled:opacity-60"
+              loading={closing}
+              className="mt-3"
             >
-              {closing ? "Fermeture…" : "Fermer mon compte"}
-            </button>
+              Fermer mon compte
+            </Button>
           </section>
         ) : null}
 
@@ -307,49 +312,55 @@ function ComptePageContent() {
           onSubmit={(e) => void saveProfile(e)}
           className="space-y-4 rounded-2xl border border-slate-200 bg-white px-5 py-5"
         >
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[#10294B]">
+            Identité & contact
+          </h3>
+
           <div>
             <Label htmlFor="compte-email">E-mail</Label>
-            <Input id="compte-email" type="email" value={user.email ?? ""} readOnly className="bg-slate-50" />
+            <Input
+              id="compte-email"
+              type="email"
+              value={user.email ?? ""}
+              readOnly
+              className="bg-slate-50"
+            />
             <p className="mt-1 text-xs text-slate-500">
               L’e-mail se modifie via Firebase Authentication.
             </p>
           </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="compte-prenom">Prénom</Label>
               <Input
                 id="compte-prenom"
-                value={prenom}
-                onChange={(e) => setPrenom(e.target.value)}
+                value={form.prenom}
+                onChange={(e) => patchForm({ prenom: e.target.value })}
               />
             </div>
             <div>
               <Label htmlFor="compte-nom">Nom</Label>
               <Input
                 id="compte-nom"
-                value={nom}
-                onChange={(e) => setNom(e.target.value)}
+                value={form.nom}
+                onChange={(e) => patchForm({ nom: e.target.value })}
               />
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="compte-telephone">Téléphone</Label>
-              <Input
-                id="compte-telephone"
-                value={telephone}
-                onChange={(e) => setTelephone(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="compte-cp">Code postal</Label>
-              <Input
-                id="compte-cp"
-                value={codePostal}
-                onChange={(e) => setCodePostal(e.target.value)}
-              />
-            </div>
+
+          <div>
+            <Label htmlFor="compte-telephone">Téléphone</Label>
+            <Input
+              id="compte-telephone"
+              type="tel"
+              value={form.telephone}
+              onChange={(e) => patchForm({ telephone: e.target.value })}
+            />
           </div>
+
+          <CompteAddressFields values={form} onChange={patchForm} />
+
           <PrimaryButton type="submit" loading={saving}>
             Enregistrer mes modifications
           </PrimaryButton>
@@ -376,23 +387,25 @@ function ComptePageContent() {
         ) : null}
 
         {!user.accountClosed ? (
-          <button
+          <Button
             type="button"
+            variant="danger"
+            fullWidth
             onClick={() => void closeAccount()}
-            disabled={closing}
-            className="w-full rounded-xl border-2 border-[#CE2029]/25 py-3 text-sm font-semibold text-[#CE2029] transition hover:bg-[#CE2029]/5 disabled:opacity-60"
+            loading={closing}
           >
-            {closing ? "Fermeture…" : "Fermer mon compte"}
-          </button>
+            Fermer mon compte
+          </Button>
         ) : null}
 
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          fullWidth
           onClick={() => signOut(getFirebaseAuth())}
-          className="w-full rounded-xl border-2 border-[#10294B]/15 py-3 text-sm font-semibold text-[#10294B] transition hover:bg-[#10294B]/5"
         >
           Se déconnecter
-        </button>
+        </Button>
       </div>
     </PageShell>
   );
@@ -411,3 +424,5 @@ export default function ComptePage() {
     </Suspense>
   );
 }
+
+

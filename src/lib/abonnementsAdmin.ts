@@ -118,43 +118,21 @@ export async function uploadAbonnementCoverImage(
   return getDownloadURL(r);
 }
 
-/** Variantes possibles du libellé « Super Héros » en base (legacy). */
-const SUPER_HEROS_NOM_IN = [
-  "Super Héros",
-  "Super hero",
-  "Super Hero",
-  "Super Heros",
-  "Super Héro",
-  "Super Heroe",
-];
+import {
+  legacyDocIdsForPlan,
+  nomAliasesForPlan,
+  normalizePlanLookupKey,
+} from "@/lib/abonnementPlanLookup";
 
 /**
- * IDs Firestore possibles pour cette formule quand `nom` (« Super Héros ») ≠ id document (ex. `Super hero`).
- */
-const SUPER_HERO_LEGACY_DOC_IDS = ["Super hero", "Super Hero"];
-
-function normalizeRouteDocId(routeId: string): string {
-  return routeId.trim().replace(/\+/g, " ");
-}
-
-/** Segment d’URL qui correspond au libellé affiché plutôt qu’à l’id Firestore réel. */
-function routeSuggestsSuperHero(routeId: string): boolean {
-  const n = routeId
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}+/gu, "");
-  return n.includes("super") && n.includes("hero");
-}
-
-/**
- * Charge un document abonnement à partir du segment d’URL (ID Firestore).
- * Repli : ids legacy « Super hero », puis égalité sur `nom` pour les variantes « Super Héros ».
+ * Charge un document abonnement à partir du segment d’URL ou du recapPlanId (ex. « Marmo »).
+ * Repli : ids legacy (ex. QmRcGWVri4TxnqUQkrVi), puis champ `nom` en base.
  */
 export async function resolveAbonnementByRouteId(
   db: Firestore,
   routeId: string
 ): Promise<{ id: string; data: Record<string, unknown> } | null> {
-  const cleaned = normalizeRouteDocId(routeId);
+  const cleaned = normalizePlanLookupKey(routeId);
   if (!cleaned) return null;
 
   try {
@@ -163,17 +141,15 @@ export async function resolveAbonnementByRouteId(
       return { id: direct.id, data: direct.data() as Record<string, unknown> };
     }
 
-    if (routeSuggestsSuperHero(cleaned)) {
-      for (const legacyId of SUPER_HERO_LEGACY_DOC_IDS) {
-        if (legacyId === cleaned) continue;
-        const alt = await getDoc(doc(db, ABONNEMENTS_COLLECTION, legacyId));
-        if (alt.exists()) {
-          return { id: alt.id, data: alt.data() as Record<string, unknown> };
-        }
+    for (const legacyId of legacyDocIdsForPlan(cleaned)) {
+      if (legacyId === cleaned) continue;
+      const alt = await getDoc(doc(db, ABONNEMENTS_COLLECTION, legacyId));
+      if (alt.exists()) {
+        return { id: alt.id, data: alt.data() as Record<string, unknown> };
       }
     }
 
-    for (const nom of SUPER_HEROS_NOM_IN) {
+    for (const nom of nomAliasesForPlan(cleaned)) {
       const snap = await getDocs(
         query(
           collection(db, ABONNEMENTS_COLLECTION),

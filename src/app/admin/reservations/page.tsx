@@ -1,13 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   RESERVATIONS_COLLECTION,
-  TAKE_CHARGE_ETAT,
   deleteReservationDoc,
   isLingeRestitueLabel,
   loadReservationRows,
-  setReservationPrisEnCharge,
+  reservationNeedsTakeCharge,
   type ReservationAdminRow,
 } from "@/lib/reservationsAdmin";
 import { getFirebaseFirestore } from "@/lib/firebase";
@@ -276,32 +276,6 @@ export default function AdminReservationsPage() {
     URL.revokeObjectURL(url);
   }
 
-  async function handleTakeCharge(r: ReservationAdminRow) {
-    setError(null);
-    setActionBusy((m) => ({ ...m, [r.id]: "take" }));
-    try {
-      const db = getFirebaseFirestore();
-      await setReservationPrisEnCharge(db, r);
-      setRows((prev) =>
-        prev.map((row) =>
-          row.id === r.id
-            ? {
-                ...row,
-                etat: TAKE_CHARGE_ETAT,
-              }
-            : row
-        )
-      );
-    } catch (err) {
-      setError(`Prise en charge impossible — ${firebaseMessage(err)}`);
-    } finally {
-      setActionBusy((m) => {
-        const { [r.id]: _, ...rest } = m;
-        return rest;
-      });
-    }
-  }
-
   async function handleDelete(r: ReservationAdminRow) {
     if (
       !window.confirm(
@@ -503,10 +477,20 @@ export default function AdminReservationsPage() {
                         {formatHeureReservation(r.heureReservation)}
                       </td>
                       <td className="max-w-[120px] truncate px-3 py-3 font-medium text-slate-900">
-                        {r.nom}
+                        <Link
+                          href={`/admin/reservations/${encodeURIComponent(r.id)}`}
+                          className="text-[#10294B] hover:text-[#CE2029] hover:underline"
+                        >
+                          {r.nom}
+                        </Link>
                       </td>
                       <td className="max-w-[120px] truncate px-3 py-3 text-slate-800">
-                        {r.prenom}
+                        <Link
+                          href={`/admin/reservations/${encodeURIComponent(r.id)}`}
+                          className="hover:text-[#CE2029] hover:underline"
+                        >
+                          {r.prenom}
+                        </Link>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 text-slate-700">
                         {formatCreneau(
@@ -535,15 +519,18 @@ export default function AdminReservationsPage() {
                       </td>
                       <td className="whitespace-nowrap px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            disabled={!!busy}
-                            onClick={() => void handleTakeCharge(r)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-[#10294B]/25 bg-[#10294B]/[0.08] px-2.5 py-1.5 text-xs font-bold text-[#10294B] transition hover:bg-[#10294B]/15 disabled:opacity-50"
+                          <Link
+                            href={
+                              reservationNeedsTakeCharge(r.etat)
+                                ? `/admin/reservations/${encodeURIComponent(r.id)}?prendre=1`
+                                : `/admin/reservations/${encodeURIComponent(r.id)}`
+                            }
+                            className="inline-flex items-center gap-1 rounded-lg border border-[#10294B]/25 bg-[#10294B]/[0.08] px-2.5 py-1.5 text-xs font-bold text-[#10294B] transition hover:bg-[#10294B]/15"
                           >
-                            {busy === "take" ? "…" : null}
-                            Prendre en charge
-                          </button>
+                            {reservationNeedsTakeCharge(r.etat)
+                              ? "Prendre en charge"
+                              : "Gérer"}
+                          </Link>
                           <button
                             type="button"
                             disabled={!!busy}

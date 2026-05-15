@@ -1,5 +1,7 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
 
+import { Button, ButtonLink } from "@/components/ui/Button";
+
 export function Label({
   htmlFor,
   children,
@@ -38,14 +40,18 @@ export function PrimaryButton({
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) {
   return (
-    <button
+    <Button
       type={type}
-      disabled={loading || disabled}
-      className={`w-full rounded-xl bg-[#CE2029] py-3.5 text-center text-base font-bold text-white shadow-lg shadow-[#CE2029]/20 transition hover:bg-[#b91b24] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      variant="primary"
+      size="lg"
+      fullWidth
+      loading={loading}
+      disabled={disabled}
+      className={className}
       {...props}
     >
-      {loading ? "Patientez…" : children}
-    </button>
+      {children}
+    </Button>
   );
 }
 
@@ -57,11 +63,8 @@ export function SecondaryLinkButton({
   children: ReactNode;
 }) {
   return (
-    <a
-      href={href}
-      className="block w-full rounded-xl border-2 border-[#10294B]/15 py-3 text-center text-sm font-semibold text-[#10294B] transition hover:border-[#10294B]/30 hover:bg-[#10294B]/5"
-    >
+    <ButtonLink href={href} variant="secondary" size="md" fullWidth>
       {children}
-    </a>
+    </ButtonLink>
   );
 }

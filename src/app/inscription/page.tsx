@@ -10,6 +10,7 @@ import {
   normalizePostalCode,
   postalCodeCoverageStatus,
 } from "@/lib/coveredPostalCodes";
+import { CommunesCouvertesLink } from "@/components/inscription/CommunesCouvertesLink";
 import {
   InscriptionFormFields,
   type InscriptionFormValues,
@@ -216,9 +217,9 @@ export default function InscriptionPage() {
           </p>
           <p className="mt-4 text-sm text-slate-600">
             En attendant, vous pouvez consulter la{" "}
-            <Link href="/communes" className="font-semibold text-[#CE2029] hover:underline">
+            <CommunesCouvertesLink>
               liste des communes couvertes
-            </Link>
+            </CommunesCouvertesLink>
             .
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -242,9 +243,16 @@ export default function InscriptionPage() {
 
   return (
     <PageShell title="Créer un compte" showShellHeading={false} maxWidth="xl">
-      <h1 className="mb-8 text-center text-3xl font-bold text-[#10294B] md:text-4xl">
+      <h1 className="mb-4 text-center text-3xl font-bold text-[#10294B] md:text-4xl">
         Créer un compte
       </h1>
+
+      <p className="mb-8 text-center text-sm text-slate-600">
+        <CommunesCouvertesLink className="inline-flex items-center gap-1.5 font-semibold text-[#10294B] hover:text-[#CE2029]">
+          Voir la liste des communes couvertes
+          <span aria-hidden>→</span>
+        </CommunesCouvertesLink>
+      </p>
 
       <InscriptionFormFields
         values={values}

@@ -55,12 +55,6 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     items: [{ label: "Codes partenaires", href: "/admin/partenaires", external: false }],
   },
   {
-    title: "Service client",
-    items: [
-      { label: "Gestion des résiliations", href: "/admin/resiliations", external: false },
-    ],
-  },
-  {
     title: "Emails",
     items: [{ label: "Gestion des emails", href: "/admin/emails", external: false }],
   },

@@ -16,13 +16,22 @@ import {
 } from "firebase/firestore";
 import { EspaceClientAccountFooter } from "@/components/espace-client/EspaceClientAccountFooter";
 import { ClientProductCatalog } from "@/components/espace-client/ClientProductCatalog";
+import { ClientTransactionsHistory } from "@/components/espace-client/ClientTransactionsHistory";
+import { ClientReservationsTable } from "@/components/espace-client/ClientReservationsTable";
 import { EspaceClientStatusPanel } from "@/components/espace-client/EspaceClientStatusPanel";
 import { PartnerCodeForm } from "@/components/espace-client/PartnerCodeForm";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 import { shouldShowClientTestOffer } from "@/lib/clientCatalog";
 import { getUserAccess, type UserAccessResult } from "@/lib/authRedirect";
 import { siteAsset } from "@/lib/assetBase";
+import {
+  loadUserReservationRows,
+  type ReservationAdminRow,
+} from "@/lib/reservationsAdmin";
+import { firebaseMessage } from "@/lib/firebaseError";
 import { PageShell } from "@/components/shell/PageShell";
+import { BackLink } from "@/components/ui/BackLink";
+import { Button, ButtonLink } from "@/components/ui/Button";
 
 function str(v: unknown): string {
   if (v == null) return "";
@@ -196,6 +205,13 @@ function EspaceClientPageContent() {
   const [collectesDisplay, setCollectesDisplay] = useState("0");
   const [poidsDisplay, setPoidsDisplay] = useState("0 kg");
   const [txRows, setTxRows] = useState<MyTxRow[]>([]);
+  const [reservationRows, setReservationRows] = useState<ReservationAdminRow[]>(
+    []
+  );
+  const [reservationsLoading, setReservationsLoading] = useState(true);
+  const [reservationsError, setReservationsError] = useState<string | null>(
+    null
+  );
   const [showTestOffer, setShowTestOffer] = useState(false);
 
   useEffect(() => {
@@ -223,6 +239,20 @@ function EspaceClientPageContent() {
         router.replace("/admin");
         return;
       }
+      setReservationsLoading(true);
+      setReservationsError(null);
+      try {
+        const reservations = await loadUserReservationRows(db, u.uid);
+        setReservationRows(reservations);
+      } catch (err) {
+        setReservationRows([]);
+        setReservationsError(
+          `Impossible de charger vos demandes — ${firebaseMessage(err)}.`
+        );
+      } finally {
+        setReservationsLoading(false);
+      }
+
       try {
         const txSnap = await getDocs(
           query(collection(db, "transactions"), where("userId", "==", u.uid))
@@ -377,6 +407,8 @@ function EspaceClientPageContent() {
       <div className="space-y-8 lg:space-y-10">
         <h1 className="sr-only">Espace client Le Repasseur</h1>
 
+        <BackLink href="/" label="Retour à l’accueil" />
+
         {checkoutInfo ? (
           <p
             className="rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-center text-sm text-emerald-900"
@@ -404,93 +436,60 @@ function EspaceClientPageContent() {
           <PartnerCodeForm />
         </div>
 
-        {subscribed ? (
-          <div className="flex gap-4 rounded-2xl border-l-4 border-[#CE2029] bg-gradient-to-r from-[#CE2029]/[0.08] to-transparent px-5 py-4 lg:max-w-4xl">
-            <p className="text-sm leading-relaxed text-[#10294B]">
-              <span className="font-bold text-[#CE2029]">Abonné :</span> vos
-              collectes et votre quota se suivent dans l&apos;application.
-              Ci-dessous : packs ponctuels ou changement de formule.
-            </p>
-          </div>
-        ) : null}
+        <ClientReservationsTable
+          rows={reservationRows}
+          loading={reservationsLoading}
+          error={reservationsError}
+        />
 
         <ClientProductCatalog
           subscribed={subscribed}
           currentRole={access.role}
           showTestOffer={showTestOffer}
+          beforeSubscriptions={
+            <>
+              <ClientTransactionsHistory
+                rows={txRows}
+                formatDate={formatTxDate}
+              />
+              {subscribed ? (
+                <div className="flex gap-4 rounded-2xl border-l-4 border-[#CE2029] bg-gradient-to-r from-[#CE2029]/[0.08] to-transparent px-5 py-4 lg:max-w-4xl">
+                  <p className="text-sm leading-relaxed text-[#10294B]">
+                    <span className="font-bold text-[#CE2029]">Abonné :</span>{" "}
+                    vos collectes et votre quota se suivent dans
+                    l&apos;application. Ci-dessous : packs ponctuels ou
+                    changement de formule.
+                  </p>
+                </div>
+              ) : null}
+            </>
+          }
         />
-
-        <section
-          className="rounded-2xl border border-slate-200/70 bg-white/85 p-5 shadow-sm sm:p-6"
-          aria-labelledby="tx-history"
-        >
-          <h2
-            id="tx-history"
-            className="font-lobster text-2xl text-[#10294B]"
-          >
-            3. Historique des transactions
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Vos paiements, abonnements et renouvellements.
-          </p>
-          {txRows.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">Aucune transaction pour le moment.</p>
-          ) : (
-            <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200/80">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr className="text-left text-slate-600">
-                    <th className="px-4 py-2.5 font-semibold">Date</th>
-                    <th className="px-4 py-2.5 font-semibold">Type</th>
-                    <th className="px-4 py-2.5 font-semibold">Détail</th>
-                    <th className="px-4 py-2.5 font-semibold">Montant</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {txRows.map((r) => (
-                    <tr key={r.id}>
-                      <td className="px-4 py-2.5 text-slate-700">{formatTxDate(r.date)}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{r.type}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{r.titre}</td>
-                      <td className="px-4 py-2.5 font-semibold text-[#10294B]">{r.montantDisplay}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
 
         <EspaceClientAccountFooter subscribed={subscribed} />
 
-        <div className="flex flex-col items-center gap-4 border-t border-slate-200/50 pt-8 lg:flex-row lg:flex-wrap lg:justify-center lg:gap-x-12 lg:pt-10">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-[#10294B] underline decoration-[#CE2029]/30 underline-offset-4 transition hover:decoration-[#CE2029]"
-          >
+        <div className="flex flex-col items-stretch gap-3 border-t border-slate-200/50 pt-8 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3 lg:pt-10">
+          <ButtonLink href="/" variant="ghost" size="sm" className="sm:!w-auto">
             Accueil du site
-          </Link>
-          <Link
-            href="/compte"
-            className="text-sm font-semibold text-[#10294B] underline decoration-[#CE2029]/30 underline-offset-4 transition hover:decoration-[#CE2029]"
-          >
+          </ButtonLink>
+          <ButtonLink href="/compte" variant="ghost" size="sm" className="sm:!w-auto">
             Mon compte
-          </Link>
-          <Link
-            href="/contact"
-            className="text-sm font-semibold text-[#10294B] underline decoration-[#CE2029]/30 underline-offset-4 transition hover:decoration-[#CE2029]"
-          >
+          </ButtonLink>
+          <ButtonLink href="/contact" variant="ghost" size="sm" className="sm:!w-auto">
             Contact
-          </Link>
+          </ButtonLink>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="lg"
+          fullWidth
+          className="lg:mx-auto lg:max-w-xs"
           onClick={() => signOut(getFirebaseAuth())}
-          className="w-full rounded-xl border-2 border-[#10294B]/20 bg-white/80 py-3.5 text-sm font-bold text-[#10294B] shadow-sm transition hover:border-[#10294B]/35 hover:bg-[#10294B]/5 lg:mx-auto lg:max-w-xs"
         >
           Se déconnecter
-        </button>
+        </Button>
       </div>
     </PageShell>
   );

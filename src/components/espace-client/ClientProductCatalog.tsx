@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   CLIENT_PACK_ITEMS,
@@ -225,11 +225,14 @@ export function ClientProductCatalog({
   subscribed,
   currentRole,
   showTestOffer = false,
+  beforeSubscriptions,
 }: {
   subscribed: boolean;
   currentRole?: string;
   /** Offre découverte 1 € en tête de liste (nouveaux inscrits). */
   showTestOffer?: boolean;
+  /** Contenu inséré après l’intro, juste avant « Changer d’abonnement ». */
+  beforeSubscriptions?: ReactNode;
 }) {
   const [images, setImages] = useState<HomeFirestoreImages>({});
   const [testOffer, setTestOffer] = useState<ClientCatalogEntry | null>(null);
@@ -290,6 +293,10 @@ export function ClientProductCatalog({
             />
           )}
         </section>
+      ) : null}
+
+      {beforeSubscriptions ? (
+        <div className="space-y-8">{beforeSubscriptions}</div>
       ) : null}
 
       <section aria-labelledby="choose-abo" className="scroll-mt-24">

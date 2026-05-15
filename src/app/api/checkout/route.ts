@@ -212,6 +212,12 @@ export async function POST(req: NextRequest) {
             metadata: { ...extraMeta },
           },
         }),
+    locale: "fr",
+    custom_text: {
+      submit: {
+        message: "Paiement sécurisé via Stripe.",
+      },
+    },
   };
 
   try {

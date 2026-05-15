@@ -2,21 +2,21 @@ import type { Metadata } from "next";
 
 import { LegalArticle } from "@/components/legal/LegalArticle";
 import { PageShell } from "@/components/shell/PageShell";
-import { CguContent } from "@/content/legal/cguContent";
+import { PreparationContent } from "@/content/legal/preparationContent";
 
 export const metadata: Metadata = {
-  title: "Conditions générales d'utilisation",
+  title: "Bien préparer sa collecte",
 };
 
-export default function CGUPage() {
+export default function PreparationPage() {
   return (
     <PageShell
-      title="CGU"
-      subtitle="Conditions générales d'utilisation du site et de l'application Le Repasseur."
+      title="Bien préparer sa collecte"
+      subtitle="Guide client pour la collecte de linge à domicile."
       maxWidth="lg"
     >
       <LegalArticle>
-        <CguContent />
+        <PreparationContent />
       </LegalArticle>
     </PageShell>
   );

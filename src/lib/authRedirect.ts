@@ -105,15 +105,9 @@ export async function resolvePostLoginHref(uid: string): Promise<{
   if (access.isAdmin) {
     return { href: "/admin" };
   }
-  if (access.isWaitingSector) {
-    return { href: "/compte" };
-  }
-  if (access.isSubscribedClient || access.isPendingSignup) {
-    return { href: "/espace-client" };
-  }
 
   return {
-    href: "/compte",
+    href: "/espace-client",
     error: access.unknownRoleError,
   };
 }

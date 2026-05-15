@@ -2,6 +2,11 @@ import "server-only";
 
 import type { Firestore } from "firebase-admin/firestore";
 
+import {
+  legacyDocIdsForPlan,
+  nomAliasesForPlan,
+  normalizePlanLookupKey,
+} from "@/lib/abonnementPlanLookup";
 import { ABONNEMENTS_COLLECTION } from "@/lib/abonnementsAdmin";
 import {
   euroCentsFromRecapPlanId,
@@ -29,9 +34,12 @@ async function centsFromCollection(
   collectionPath: string,
   planId: string
 ): Promise<number | undefined> {
+  const planKey = normalizePlanLookupKey(planId);
+  if (!planKey) return undefined;
+
   const recap = await db
     .collection(collectionPath)
-    .where("recapPlanId", "==", planId)
+    .where("recapPlanId", "==", planKey)
     .limit(1)
     .get();
   if (!recap.empty) {
@@ -41,20 +49,56 @@ async function centsFromCollection(
     if (cents != null && cents > 0) return cents;
   }
 
+  if (collectionPath === ABONNEMENTS_COLLECTION) {
+    const direct = await db.collection(collectionPath).doc(planKey).get();
+    if (direct.exists) {
+      const cents = firestorePrixToCents(
+        direct.data() as Record<string, unknown>
+      );
+      if (cents != null && cents > 0) return cents;
+    }
+
+    for (const legacyId of legacyDocIdsForPlan(planKey)) {
+      if (legacyId === planKey) continue;
+      const legacy = await db.collection(collectionPath).doc(legacyId).get();
+      if (legacy.exists) {
+        const cents = firestorePrixToCents(
+          legacy.data() as Record<string, unknown>
+        );
+        if (cents != null && cents > 0) return cents;
+      }
+    }
+
+    for (const nom of nomAliasesForPlan(planKey)) {
+      const byNom = await db
+        .collection(collectionPath)
+        .where("nom", "==", nom)
+        .limit(1)
+        .get();
+      if (!byNom.empty) {
+        const cents = firestorePrixToCents(
+          byNom.docs[0]!.data() as Record<string, unknown>
+        );
+        if (cents != null && cents > 0) return cents;
+      }
+    }
+    return undefined;
+  }
+
   const nom = await db
     .collection(collectionPath)
-    .where("nom", "==", planId)
+    .where("nom", "==", planKey)
     .limit(1)
     .get();
   if (!nom.empty) {
     const cents = firestorePrixToCents(
-      nom.docs[0].data() as Record<string, unknown>
+      nom.docs[0]!.data() as Record<string, unknown>
     );
     if (cents != null && cents > 0) return cents;
   }
 
   if (collectionPath === PRODUITS_COLLECTION) {
-    const direct = await db.collection(collectionPath).doc(planId).get();
+    const direct = await db.collection(collectionPath).doc(planKey).get();
     if (direct.exists) {
       const cents = firestorePrixToCents(
         direct.data() as Record<string, unknown>

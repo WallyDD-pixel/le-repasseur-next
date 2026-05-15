@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   updateDoc,
   Timestamp,
+  where,
   type Firestore,
 } from "firebase/firestore";
 
@@ -21,6 +22,16 @@ const USERS_COLLECTION = "users";
 
 /** Valeur écrite lors du clic « Prendre en charge ». */
 export const TAKE_CHARGE_ETAT = "Pris en charge";
+
+/** États proposés dans l’admin (alignés sur l’app / l’ancienne console). */
+export const RESERVATION_ETAT_OPTIONS = [
+  "En attente",
+  "Pris en charge",
+  "En cours de repassage",
+  "Linge restitué",
+] as const;
+
+export type ReservationEtatOption = (typeof RESERVATION_ETAT_OPTIONS)[number];
 
 export type ReservationAdminRow = {
   id: string;
@@ -329,6 +340,102 @@ export function normalizeReservationDoc(
   };
 }
 
+/** Formate la date de demande. */
+export function formatHeureReservation(d: Date | null): string {
+  if (!d) return "—";
+  return d.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Affiche la chaîne Firestore si présente (ex. `2026-03-16 (lundi) 16:00`). */
+export function formatReservationCreneau(
+  d: Date | null,
+  firestoreDisplay?: string | null
+): string {
+  if (firestoreDisplay?.trim()) return firestoreDisplay.trim();
+  if (!d) return "—";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const weekday = d.toLocaleDateString("fr-FR", { weekday: "long" });
+  const hm = d.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${y}-${m}-${day} (${weekday}) ${hm}`;
+}
+
+export function reservationEtatBadgeClass(etat: string): string {
+  const t = etat.toLowerCase();
+  if (t.includes("restitu"))
+    return "bg-emerald-100 text-emerald-900 ring-emerald-200";
+  if (
+    t.includes("pris") ||
+    t.includes("charge") ||
+    t.includes("cours") ||
+    t.includes("traitement")
+  )
+    return "bg-sky-100 text-sky-900 ring-sky-200";
+  if (t.includes("attente") || t.includes("demande") || t.includes("nouveau"))
+    return "bg-amber-50 text-amber-900 ring-amber-200";
+  return "bg-slate-100 text-slate-800 ring-slate-200";
+}
+
+const USER_ID_QUERY_FIELDS = ["userId", "uid", "idUtilisateur"] as const;
+
+/**
+ * Demandes de réservation d’un utilisateur (app mobile / legacy).
+ * Interroge plusieurs champs d’identifiant pour couvrir les anciens documents.
+ */
+export async function loadUserReservationRows(
+  db: Firestore,
+  uid: string
+): Promise<ReservationAdminRow[]> {
+  const col = collection(db, RESERVATIONS_COLLECTION);
+  const byId = new Map<string, Record<string, unknown>>();
+
+  await Promise.all(
+    USER_ID_QUERY_FIELDS.map(async (field) => {
+      try {
+        const snap = await getDocs(query(col, where(field, "==", uid)));
+        snap.forEach((d) => {
+          byId.set(d.id, d.data() as Record<string, unknown>);
+        });
+      } catch {
+        /* index ou règles Firestore */
+      }
+    })
+  );
+
+  let userData: Record<string, unknown> | undefined;
+  try {
+    const userSnap = await getDoc(doc(db, USERS_COLLECTION, uid));
+    if (userSnap.exists()) {
+      userData = userSnap.data() as Record<string, unknown>;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  const rows = [...byId.entries()].map(([id, data]) =>
+    normalizeReservationDoc(id, data, userData)
+  );
+
+  rows.sort((a, b) => {
+    const ta = a.heureReservation?.getTime() ?? 0;
+    const tb = b.heureReservation?.getTime() ?? 0;
+    return tb - ta;
+  });
+
+  return rows;
+}
+
 export async function loadReservationRows(
   db: Firestore
 ): Promise<ReservationAdminRow[]> {
@@ -389,15 +496,56 @@ export async function loadReservationRows(
   return rows;
 }
 
+export async function loadReservationById(
+  db: Firestore,
+  id: string
+): Promise<ReservationAdminRow | null> {
+  const snap = await getDoc(doc(db, RESERVATIONS_COLLECTION, id));
+  if (!snap.exists()) return null;
+
+  const data = snap.data() as Record<string, unknown>;
+  let userData: Record<string, unknown> | undefined;
+  const uidRaw = pickFirst(data, ["userId", "uid", "idUtilisateur", "user"]);
+  const uid =
+    typeof uidRaw === "string" && uidRaw.trim() ? uidRaw.trim() : null;
+  if (uid) {
+    const userSnap = await getDoc(doc(db, USERS_COLLECTION, uid));
+    if (userSnap.exists()) {
+      userData = userSnap.data() as Record<string, unknown>;
+    }
+  }
+  return normalizeReservationDoc(id, data, userData);
+}
+
+export async function setReservationEtat(
+  db: Firestore,
+  row: Pick<ReservationAdminRow, "id" | "etatFieldName">,
+  etat: string
+): Promise<void> {
+  const ref = doc(db, RESERVATIONS_COLLECTION, row.id);
+  await updateDoc(ref, {
+    [row.etatFieldName]: etat.trim(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function setReservationPrisEnCharge(
   db: Firestore,
   row: Pick<ReservationAdminRow, "id" | "etatFieldName">
 ): Promise<void> {
-  const ref = doc(db, RESERVATIONS_COLLECTION, row.id);
-  await updateDoc(ref, {
-    [row.etatFieldName]: TAKE_CHARGE_ETAT,
-    updatedAt: serverTimestamp(),
-  });
+  await setReservationEtat(db, row, TAKE_CHARGE_ETAT);
+}
+
+/** True si la demande n’est pas encore prise en charge (bouton liste). */
+export function reservationNeedsTakeCharge(etat: string): boolean {
+  const t = etat
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (t.includes("restitu")) return false;
+  if (t.includes("pris") || t.includes("charge")) return false;
+  if (t.includes("cours") || t.includes("repassage")) return false;
+  return true;
 }
 
 export async function deleteReservationDoc(

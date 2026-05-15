@@ -15,13 +15,12 @@ import { siteAsset } from "@/lib/assetBase";
 function dashboardHref(a: UserAccessResult): string {
   if (!a.userExists) return "/compte";
   if (a.isAdmin) return "/admin";
-  if (a.isSubscribedClient || a.isPendingSignup) return "/espace-client";
-  return "/compte";
+  return "/espace-client";
 }
 
 function dashboardLabel(a: UserAccessResult): string {
   if (a.isAdmin) return "Administration";
-  if (a.isSubscribedClient || a.isPendingSignup) return "Mon espace";
+  if (a.userExists) return "Mon espace";
   return "Mon compte";
 }
 

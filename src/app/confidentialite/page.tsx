@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+
+import { LegalArticle } from "@/components/legal/LegalArticle";
 import { PageShell } from "@/components/shell/PageShell";
+import { ConfidentialiteContent } from "@/content/legal/confidentialiteContent";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
@@ -12,12 +15,9 @@ export default function ConfidentialitePage() {
       subtitle="Politique de confidentialité et protection des données."
       maxWidth="lg"
     >
-      <article className="space-y-4 text-slate-600">
-        <p className="leading-relaxed">
-          Emplacement réservé : migrez le contenu depuis{" "}
-          <strong>Confidential.html</strong> (RGPD, cookies, etc.).
-        </p>
-      </article>
+      <LegalArticle>
+        <ConfidentialiteContent />
+      </LegalArticle>
     </PageShell>
   );
 }

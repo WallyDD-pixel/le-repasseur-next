@@ -1,5 +1,6 @@
 import { collection, getDocs } from "firebase/firestore";
 import { getFirebaseFirestore } from "@/lib/firebase";
+import { MARMO_LEGACY_FIRESTORE_DOC_ID } from "@/lib/abonnementPlanLookup";
 import { isHiddenSystemAbonnement } from "@/lib/abonnementsAdmin";
 
 export type HomeFirestoreImages = Partial<{
@@ -49,7 +50,7 @@ const AB_ID_TO_KEY: Record<string, AboKey> = {
   Mino: "mino",
   Solo: "solo",
   Duo: "duo",
-  QmRcGWVri4TxnqUQkrVi: "marmo",
+  [MARMO_LEGACY_FIRESTORE_DOC_ID]: "marmo",
   "Super hero": "superHero",
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CommunesCouvertesLink } from "@/components/inscription/CommunesCouvertesLink";
 import type { PostalCoverageStatus } from "@/lib/coveredPostalCodes";
 import {
   MESSAGE_CP_COUVERT,
@@ -20,9 +21,7 @@ function PostalCodeCoverageHint({ status }: { status: PostalCoverageStatus }) {
   return (
     <p className="mt-1.5 text-xs leading-relaxed text-amber-900" role="status">
       {MESSAGE_CP_HORS_SECTEUR}{" "}
-      <Link href="/communes" className="font-semibold text-[#CE2029] hover:underline">
-        Voir les codes postaux couverts
-      </Link>
+      <CommunesCouvertesLink>Voir les codes postaux couverts</CommunesCouvertesLink>
     </p>
   );
 }
@@ -88,6 +87,7 @@ export function InscriptionFormFields({
   onSubmit,
 }: Props) {
   return (
+    <div className="space-y-8">
     <form onSubmit={onSubmit} className="space-y-8">
       <section className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -360,20 +360,6 @@ export function InscriptionFormFields({
         </p>
       ) : null}
 
-      <div className="space-y-2 text-center text-sm text-slate-600">
-        <p>
-          Déjà inscrit ?{" "}
-          <Link href="/connexion" className="font-semibold text-[#10294B] hover:underline">
-            Connectez-vous ici
-          </Link>
-        </p>
-        <p>
-          <Link href="/communes" className="font-semibold text-[#10294B] hover:underline">
-            Liste des communes couvertes ici
-          </Link>
-        </p>
-      </div>
-
       <div className="flex flex-col items-center justify-center gap-3 pt-2 sm:flex-row">
         <button
           type="submit"
@@ -390,5 +376,20 @@ export function InscriptionFormFields({
         </Link>
       </div>
     </form>
+
+      <div className="space-y-2 text-center text-sm text-slate-600">
+        <p>
+          Déjà inscrit ?{" "}
+          <Link href="/connexion" className="font-semibold text-[#10294B] hover:underline">
+            Connectez-vous ici
+          </Link>
+        </p>
+        <p>
+          <CommunesCouvertesLink className="font-semibold text-[#10294B] hover:underline">
+            Voir la liste des communes couvertes
+          </CommunesCouvertesLink>
+        </p>
+      </div>
+    </div>
   );
 }

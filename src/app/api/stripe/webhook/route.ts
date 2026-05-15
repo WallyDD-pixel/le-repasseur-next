@@ -3,36 +3,15 @@ import Stripe from "stripe";
 import * as admin from "firebase-admin";
 
 import { TRANSACTIONS_COLLECTION } from "@/lib/activiteAdmin";
+import {
+  findPlanOrProductData,
+  resolvePlanCredits,
+} from "@/lib/planCreditsResolve";
 import { getAdminFirestore } from "@/server/firebaseAdmin";
+import { resolveStripeSubscriptionContext } from "@/lib/stripeSubscriptionResolve";
 import { resolveStripeSecret } from "@/server/stripeConfigResolve";
 
 export const runtime = "nodejs";
-
-function positiveNumber(raw: unknown): number | null {
-  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
-  if (typeof raw === "string") {
-    const n = Number.parseFloat(raw.replace(",", ".").trim());
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  return null;
-}
-
-async function findPlanDoc(
-  db: admin.firestore.Firestore,
-  planId: string
-): Promise<Record<string, unknown> | null> {
-  if (!planId) return null;
-  const byId = await db.collection("abonnements").doc(planId).get();
-  if (byId.exists) return byId.data() as Record<string, unknown>;
-
-  const byNom = await db
-    .collection("abonnements")
-    .where("nom", "==", planId)
-    .limit(1)
-    .get();
-  if (!byNom.empty) return byNom.docs[0]!.data() as Record<string, unknown>;
-  return null;
-}
 
 async function uidFromEmail(
   db: admin.firestore.Firestore,
@@ -133,17 +112,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
-  const planId = sub.metadata?.planId?.trim() || invoice.metadata?.planId?.trim() || "";
-  const firebaseUid =
-    sub.metadata?.firebaseUid?.trim() || invoice.metadata?.firebaseUid?.trim() || "";
+  const { planId, firebaseUid, customerEmail } =
+    await resolveStripeSubscriptionContext(stripe, sub, invoice);
 
   let uid = firebaseUid;
-  if (!uid) {
-    const customerEmail =
-      invoice.customer_email?.trim() || sub.metadata?.userEmail?.trim() || "";
-    if (customerEmail) {
-      uid = (await uidFromEmail(db, customerEmail)) || "";
-    }
+  if (!uid && customerEmail) {
+    uid = (await uidFromEmail(db, customerEmail)) || "";
   }
   if (!uid) {
     return NextResponse.json(
@@ -152,14 +126,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const planDoc = await findPlanDoc(db, planId);
-  const addReservations = positiveNumber(planDoc?.collectes);
-  const addCollectes = positiveNumber(planDoc?.kg);
-
   const amountTotal =
     typeof invoice.amount_paid === "number" ? invoice.amount_paid : null;
   const amountEuros =
     amountTotal != null ? Math.round((amountTotal / 100) * 100) / 100 : null;
+
+  const planDoc = await findPlanOrProductData(db, planId, amountEuros);
+  const { addReservations, addKg } = resolvePlanCredits(planId, planDoc);
+  const addCollectes = addKg;
 
   const txPayload: Record<string, unknown> = {
     userId: uid,
