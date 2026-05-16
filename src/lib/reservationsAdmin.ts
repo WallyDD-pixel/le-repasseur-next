@@ -20,16 +20,30 @@ export const RESERVATIONS_COLLECTION = "demande de reservation";
 
 const USERS_COLLECTION = "users";
 
-/** Valeur écrite lors du clic « Prendre en charge ». */
-export const TAKE_CHARGE_ETAT = "Pris en charge";
+/** État initial d’une nouvelle demande. */
+export const RESERVATION_ETAT_DEFAULT = "En attente";
 
-/** États proposés dans l’admin (alignés sur l’app / l’ancienne console). */
+/** Valeur écrite lors du clic « Prendre en charge » (passage depuis « En attente »). */
+export const TAKE_CHARGE_ETAT = "Validation de votre demande";
+
+/**
+ * Étapes du suivi client (ordre chronologique).
+ * Aligné sur l’app mobile / la gestion admin.
+ */
 export const RESERVATION_ETAT_OPTIONS = [
   "En attente",
-  "Pris en charge",
+  "Validation de votre demande",
+  "Votre livreur est en route",
+  "Linge récupéré",
   "En cours de repassage",
+  "Prise en charge par votre livreur",
   "Linge restitué",
 ] as const;
+
+/** Libellés historiques → index d’étape (pour affichage rétrocompatible). */
+const LEGACY_ETAT_TO_INDEX: Record<string, number> = {
+  "pris en charge": 1,
+};
 
 export type ReservationEtatOption = (typeof RESERVATION_ETAT_OPTIONS)[number];
 
@@ -187,7 +201,27 @@ function detectEtatField(data: Record<string, unknown>): string {
 function coerceEtat(data: Record<string, unknown>, field: string): string {
   const raw = data[field];
   const s = str(raw);
-  return s || "—";
+  return s || RESERVATION_ETAT_DEFAULT;
+}
+
+export function normalizeReservationEtatKey(etat: string): string {
+  return etat
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+}
+
+/** Index de l’étape courante (0–6), ou -1 si libellé inconnu. */
+export function getReservationEtapeIndex(etat: string): number {
+  const key = normalizeReservationEtatKey(etat);
+  if (!key || key === "—") return 0;
+  const legacy = LEGACY_ETAT_TO_INDEX[key];
+  if (legacy != null) return legacy;
+  const idx = RESERVATION_ETAT_OPTIONS.findIndex(
+    (opt) => normalizeReservationEtatKey(opt) === key
+  );
+  return idx >= 0 ? idx : -1;
 }
 
 /** Indique si le libellé correspond à « Linge restitué » (filtre admin). */
@@ -372,17 +406,21 @@ export function formatReservationCreneau(
 }
 
 export function reservationEtatBadgeClass(etat: string): string {
-  const t = etat.toLowerCase();
+  const t = normalizeReservationEtatKey(etat);
   if (t.includes("restitu"))
     return "bg-emerald-100 text-emerald-900 ring-emerald-200";
   if (
-    t.includes("pris") ||
-    t.includes("charge") ||
+    t.includes("repassage") ||
+    t.includes("recupere") ||
+    t.includes("route") ||
+    t.includes("livreur") ||
+    t.includes("validation") ||
+    t.includes("pris en charge") ||
     t.includes("cours") ||
     t.includes("traitement")
   )
     return "bg-sky-100 text-sky-900 ring-sky-200";
-  if (t.includes("attente") || t.includes("demande") || t.includes("nouveau"))
+  if (t.includes("attente") || t.includes("nouveau"))
     return "bg-amber-50 text-amber-900 ring-amber-200";
   return "bg-slate-100 text-slate-800 ring-slate-200";
 }
@@ -536,16 +574,11 @@ export async function setReservationPrisEnCharge(
   await setReservationEtat(db, row, TAKE_CHARGE_ETAT);
 }
 
-/** True si la demande n’est pas encore prise en charge (bouton liste). */
+/** True si la demande est encore « En attente » (bouton « Prendre en charge »). */
 export function reservationNeedsTakeCharge(etat: string): boolean {
-  const t = etat
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "");
-  if (t.includes("restitu")) return false;
-  if (t.includes("pris") || t.includes("charge")) return false;
-  if (t.includes("cours") || t.includes("repassage")) return false;
-  return true;
+  const t = normalizeReservationEtatKey(etat);
+  if (!t || t === "—") return true;
+  return t === "en attente";
 }
 
 export async function deleteReservationDoc(

@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
+  RESERVATION_ETAT_DEFAULT,
   RESERVATION_ETAT_OPTIONS,
   RESERVATIONS_COLLECTION,
   TAKE_CHARGE_ETAT,
   deleteReservationDoc,
   formatHeureReservation,
   formatReservationCreneau,
+  getReservationEtapeIndex,
   loadReservationById,
   reservationEtatBadgeClass,
   reservationNeedsTakeCharge,
@@ -19,6 +21,61 @@ import {
 import { getFirebaseFirestore } from "@/lib/firebase";
 import { firebaseMessage } from "@/lib/firebaseError";
 import { Label, PrimaryButton } from "@/components/ui/FormField";
+
+function ReservationEtapesProgress({ etat }: { etat: string }) {
+  const current = getReservationEtapeIndex(etat);
+
+  return (
+    <ol className="mb-6 space-y-0" aria-label="Étapes de la réservation">
+      {RESERVATION_ETAT_OPTIONS.map((label, index) => {
+        const done = current >= 0 && index < current;
+        const active = current === index;
+        const upcoming = current >= 0 ? index > current : false;
+
+        return (
+          <li key={label} className="flex gap-3">
+            <div className="flex flex-col items-center" aria-hidden>
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-2 ${
+                  active
+                    ? "bg-[#10294B] text-white ring-[#10294B]"
+                    : done
+                      ? "bg-emerald-600 text-white ring-emerald-600"
+                      : "bg-white text-slate-400 ring-slate-200"
+                }`}
+              >
+                {done ? "✓" : index + 1}
+              </span>
+              {index < RESERVATION_ETAT_OPTIONS.length - 1 ? (
+                <span
+                  className={`my-1 w-0.5 flex-1 min-h-[1.25rem] ${
+                    done ? "bg-emerald-400" : "bg-slate-200"
+                  }`}
+                />
+              ) : null}
+            </div>
+            <div className={`pb-4 ${upcoming ? "opacity-55" : ""}`}>
+              <p
+                className={`text-sm font-semibold ${
+                  active
+                    ? "text-[#10294B]"
+                    : done
+                      ? "text-emerald-800"
+                      : "text-slate-600"
+                }`}
+              >
+                {label}
+              </p>
+              {active ? (
+                <p className="mt-0.5 text-xs text-[#CE2029]">Étape en cours</p>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 function DetailRow({
   label,
@@ -68,7 +125,11 @@ function AdminReservationDetailContent() {
         return;
       }
       setRow(loaded);
-      setEtat(loaded.etat === "—" ? RESERVATION_ETAT_OPTIONS[0] : loaded.etat);
+      setEtat(
+        loaded.etat === "—"
+          ? RESERVATION_ETAT_DEFAULT
+          : loaded.etat
+      );
     } catch (err) {
       setError(firebaseMessage(err));
       setRow(null);
@@ -97,7 +158,7 @@ function AdminReservationDetailContent() {
         setRow((prev) =>
           prev ? { ...prev, etat: TAKE_CHARGE_ETAT } : prev
         );
-        setInfo("Demande passée en « Pris en charge ».");
+        setInfo(`Demande passée en « ${TAKE_CHARGE_ETAT} ».`);
       } catch (err) {
         setError(`Prise en charge impossible — ${firebaseMessage(err)}`);
       } finally {
@@ -264,6 +325,7 @@ function AdminReservationDetailContent() {
         <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-[#CE2029]">
           État de la réservation
         </h2>
+        <ReservationEtapesProgress etat={etat || row.etat} />
         <p className="mb-4 text-sm text-slate-600">
           Collection{" "}
           <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">

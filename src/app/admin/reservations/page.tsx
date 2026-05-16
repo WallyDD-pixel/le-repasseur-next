@@ -7,6 +7,7 @@ import {
   deleteReservationDoc,
   isLingeRestitueLabel,
   loadReservationRows,
+  reservationEtatBadgeClass,
   reservationNeedsTakeCharge,
   type ReservationAdminRow,
 } from "@/lib/reservationsAdmin";
@@ -60,20 +61,6 @@ function formatCreneau(
 function escapeCsvCell(v: string): string {
   if (/[",\n\r]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
   return v;
-}
-
-function etatBadgeClass(etat: string): string {
-  const t = etat.toLowerCase();
-  if (t.includes("restitu"))
-    return "bg-emerald-100 text-emerald-900 ring-emerald-200";
-  if (
-    t.includes("pris") ||
-    t.includes("charge") ||
-    t.includes("cours") ||
-    t.includes("traitement")
-  )
-    return "bg-sky-100 text-sky-900 ring-sky-200";
-  return "bg-slate-100 text-slate-800 ring-slate-200";
 }
 
 function compareRows(
@@ -509,7 +496,7 @@ export default function AdminReservationsPage() {
                       </td>
                       <td className="px-3 py-3">
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${etatBadgeClass(r.etat)}`}
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${reservationEtatBadgeClass(r.etat)}`}
                         >
                           {r.etat}
                         </span>
