@@ -41,10 +41,14 @@ export function AppHeader() {
   }, [pathname]);
 
   useEffect(() => {
-    if (mobileOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    if (!mobileOpen) return;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
     };
   }, [mobileOpen]);
 
@@ -232,17 +236,17 @@ export function AppHeader() {
 
       {/* Mobile panel */}
       <div
-        className={`fixed inset-0 top-[57px] z-[90] bg-[#10294B]/40 backdrop-blur-sm transition-opacity duration-200 lg:hidden ${
-          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        className={`fixed inset-0 top-[57px] z-[90] bg-[#10294B]/40 backdrop-blur-sm lg:hidden ${
+          mobileOpen ? "opacity-100" : "hidden"
         }`}
         aria-hidden={!mobileOpen}
         onClick={() => setMobileOpen(false)}
       />
       <div
-        className={`fixed inset-x-0 top-[57px] z-[95] overflow-y-auto border-b border-[#10294B]/10 bg-white shadow-2xl transition-all duration-300 ease-out lg:hidden ${
+        className={`fixed inset-x-0 top-[57px] z-[95] overflow-y-auto border-b border-[#10294B]/10 bg-white shadow-2xl lg:hidden ${
           mobileOpen
-            ? "visible max-h-[calc(100vh-57px)] translate-y-0 opacity-100"
-            : "pointer-events-none invisible max-h-0 overflow-hidden border-0 py-0 opacity-0"
+            ? "max-h-[calc(100dvh-57px)] opacity-100"
+            : "hidden"
         }`}
       >
         <div className="space-y-1 px-4 py-4">

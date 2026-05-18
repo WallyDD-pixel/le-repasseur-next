@@ -79,7 +79,7 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
         Aller au contenu principal
       </a>
       <main id="main-content" role="main">
-      <div className="w-full overflow-x-hidden px-0 pt-2 sm:pt-4">
+      <div className="w-full overflow-x-clip px-0 pt-2 sm:pt-4">
         <picture>
           <source
             media="(max-width: 768px)"

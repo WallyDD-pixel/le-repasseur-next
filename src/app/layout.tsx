@@ -51,7 +51,7 @@ export default function RootLayout({
         className={`${dmSans.variable} ${lobster.variable} min-h-screen font-sans antialiased`}
       >
         <LayoutChrome>
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pt-[57px]">{children}</main>
         </LayoutChrome>
       </body>
     </html>
