@@ -10,11 +10,9 @@ export function EspaceClientAccountFooter({
   subscribed: boolean;
 }) {
   const [portalBusy, setPortalBusy] = useState(false);
-  const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onOpenStripePortal() {
-    setInfo(null);
     setError(null);
     if (!subscribed) {
       setError("Aucun abonnement actif à gérer.");
@@ -100,11 +98,6 @@ export function EspaceClientAccountFooter({
           </Button>
         </li>
       </ul>
-      {info ? (
-        <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          {info}
-        </p>
-      ) : null}
       {error ? (
         <p className="mt-3 text-sm text-red-600" role="alert">
           {error}

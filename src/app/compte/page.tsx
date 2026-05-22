@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -12,6 +12,8 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input, Label, PrimaryButton } from "@/components/ui/FormField";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 import { getUserAccess } from "@/lib/authRedirect";
+import { canCloseAccount } from "@/lib/accountClosureEligibility";
+import { AccountClosureFarewellPage } from "@/components/compte/AccountClosureFarewellPage";
 import {
   buildUserProfileUpdate,
   userProfileFromFirestore,
@@ -62,8 +64,16 @@ function ComptePageContent() {
   const [access, setAccess] = useState<Awaited<
     ReturnType<typeof getUserAccess>
   > | null>(null);
+  const [userData, setUserData] = useState<Record<string, unknown>>({});
+  const [portalBusy, setPortalBusy] = useState(false);
 
   const wantsCloseAction = searchParams.get("action") === "close";
+
+  const subscribed = access?.isSubscribedClient === true;
+  const accountClosable = useMemo(
+    () => canCloseAccount({ isSubscribed: subscribed }),
+    [subscribed]
+  );
 
   const backHref =
     access?.isAdmin
@@ -110,6 +120,7 @@ function ComptePageContent() {
       setForm(
         snap.exists() ? userProfileFromFirestore(data) : emptyProfile
       );
+      setUserData(data);
 
       const a = await getUserAccess(u.uid);
       setAccess(a);
@@ -148,8 +159,58 @@ function ComptePageContent() {
     }
   }
 
+  async function onOpenStripePortal() {
+    setInfo(null);
+    setError(null);
+    if (!subscribed) {
+      setError("Aucun abonnement actif à gérer.");
+      return;
+    }
+    const u = getFirebaseAuth().currentUser;
+    if (!u) {
+      setError("Session expirée. Reconnectez-vous puis réessayez.");
+      return;
+    }
+    setPortalBusy(true);
+    try {
+      const idToken = await u.getIdToken();
+      const res = await fetch("/api/checkout/customer-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idToken,
+          returnUrl: `${window.location.origin}/compte?action=close`,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.ok || !data.url) {
+        setError(
+          typeof data.error === "string"
+            ? data.error
+            : "Ouverture du portail Stripe impossible."
+        );
+        return;
+      }
+      window.location.assign(data.url);
+    } catch {
+      setError("Erreur réseau. Réessayez dans un instant.");
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
   async function closeAccount() {
     if (!user) return;
+    if (!accountClosable) {
+      setError(
+        "Fermeture impossible tant que votre abonnement est actif. Résiliez-le via le portail Stripe."
+      );
+      return;
+    }
     const ok = window.confirm(
       "Fermer votre compte ? Vous pourrez le réactiver plus tard en vous reconnectant."
     );
@@ -221,6 +282,54 @@ function ComptePageContent() {
     );
   }
 
+  if (wantsCloseAction && !user.accountClosed) {
+    const firstName =
+      form.prenom.trim() ||
+      (typeof userData.prenom === "string" ? userData.prenom.trim() : "");
+
+    return (
+      <PageShell
+        title="Mon espace"
+        maxWidth="lg"
+        showShellHeading={false}
+      >
+        <div className="space-y-6">
+          <BackLink href={backHref} label={backLabel} />
+
+          {error ? (
+            <p
+              className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+              role="alert"
+            >
+              {error}
+            </p>
+          ) : null}
+          {info ? (
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              {info}
+            </p>
+          ) : null}
+
+          <AccountClosureFarewellPage
+            firstName={firstName}
+            roleLabel={user.role}
+            userData={userData}
+            isSubscribed={subscribed}
+            stayHref={backHref}
+            onOpenStripePortal={
+              subscribed ? () => void onOpenStripePortal() : undefined
+            }
+            portalBusy={portalBusy}
+            onCloseAccount={
+              accountClosable ? () => void closeAccount() : undefined
+            }
+            closing={closing}
+          />
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell
       title="Mon compte"
@@ -283,27 +392,6 @@ function ComptePageContent() {
               className="mt-3 !border-amber-300 !text-amber-900 hover:!bg-amber-100"
             >
               Réactiver mon compte
-            </Button>
-          </section>
-        ) : null}
-
-        {wantsCloseAction && !user.accountClosed ? (
-          <section className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-red-700">
-              Fermeture du compte
-            </p>
-            <p className="mt-1 text-sm text-red-900">
-              Cette action ferme votre compte, mais vous pourrez le réactiver plus tard.
-            </p>
-            <Button
-              type="button"
-              variant="danger"
-              size="sm"
-              onClick={() => void closeAccount()}
-              loading={closing}
-              className="mt-3"
-            >
-              Fermer mon compte
             </Button>
           </section>
         ) : null}
@@ -387,15 +475,9 @@ function ComptePageContent() {
         ) : null}
 
         {!user.accountClosed ? (
-          <Button
-            type="button"
-            variant="danger"
-            fullWidth
-            onClick={() => void closeAccount()}
-            loading={closing}
-          >
-            Fermer mon compte
-          </Button>
+          <ButtonLink href="/compte?action=close" variant="outline" fullWidth>
+            Supprimer mon compte
+          </ButtonLink>
         ) : null}
 
         <Button
