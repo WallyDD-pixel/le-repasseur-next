@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HomeHeroSlider } from "@/components/home/HomeHeroSlider";
 import { siteAsset } from "@/lib/assetBase";
 import type { HomeFirestoreImages } from "@/lib/homeFirestoreImages";
 
@@ -79,23 +80,8 @@ export function LegacyHomeSections({ images }: { images: HomeFirestoreImages }) 
         Aller au contenu principal
       </a>
       <main id="main-content" role="main">
-      <div className="w-full overflow-x-clip px-0 pt-2 sm:pt-4">
-        <picture>
-          <source
-            media="(max-width: 768px)"
-            srcSet={siteAsset("/assets/imgg/1erpaniere768.jpg")}
-          />
-          <source
-            media="(min-width: 769px)"
-            srcSet={siteAsset("/assets/imgg/1erpaniereV2.jpg")}
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={siteAsset("/assets/imgg/1erpaniereV2.jpg")}
-            alt="Le Repasseur"
-            className="mx-auto block h-auto w-full max-w-[100vw] object-cover"
-          />
-        </picture>
+      <div className="w-full overflow-hidden px-0 pt-2 sm:pt-4">
+        <HomeHeroSlider />
       </div>
 
       <div className="container mx-auto max-w-[1200px] px-4 py-8">
