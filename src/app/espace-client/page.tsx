@@ -21,7 +21,6 @@ import { ClientReservationsTable } from "@/components/espace-client/ClientReserv
 import { EspaceClientStatusPanel } from "@/components/espace-client/EspaceClientStatusPanel";
 import { PartnerCodeForm } from "@/components/espace-client/PartnerCodeForm";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
-import { shouldShowClientTestOffer } from "@/lib/clientCatalog";
 import { getUserAccess, type UserAccessResult } from "@/lib/authRedirect";
 import { siteAsset } from "@/lib/assetBase";
 import {
@@ -212,8 +211,6 @@ function EspaceClientPageContent() {
   const [reservationsError, setReservationsError] = useState<string | null>(
     null
   );
-  const [showTestOffer, setShowTestOffer] = useState(false);
-
   useEffect(() => {
     const auth = getFirebaseAuth();
     return onAuthStateChanged(auth, async (u) => {
@@ -276,18 +273,13 @@ function EspaceClientPageContent() {
         setTxRows([]);
       }
       setAccess(a);
-      setShowTestOffer(
-        shouldShowClientTestOffer(userData, a.isSubscribedClient)
-      );
       setReady(true);
     });
   }, [router]);
 
   useEffect(() => {
     if (!ready || searchParams.get("welcome") !== "1") return;
-    const el =
-      document.getElementById("try-service") ??
-      document.getElementById("choose-abo");
+    const el = document.getElementById("choose-abo");
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -353,9 +345,6 @@ function EspaceClientPageContent() {
           const userData = snap.data() as Record<string, unknown>;
           setCollectesDisplay(normalizeReservationsDisplay(userData));
           setPoidsDisplay(normalizeKgDisplay(userData));
-          setShowTestOffer(
-            shouldShowClientTestOffer(userData, a.isSubscribedClient)
-          );
         }
         const txSnap = await getDocs(
           query(collection(getFirebaseFirestore(), "transactions"), where("userId", "==", u.uid))
@@ -445,7 +434,6 @@ function EspaceClientPageContent() {
         <ClientProductCatalog
           subscribed={subscribed}
           currentRole={access.role}
-          showTestOffer={showTestOffer}
           beforeSubscriptions={
             <>
               <ClientTransactionsHistory

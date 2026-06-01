@@ -151,9 +151,6 @@ export default function InscriptionPage() {
         role: covered ? "aucun" : "attente_secteur",
         reservations: 0,
         collectes: 0,
-        ...(covered
-          ? { eligibleTestOffer: true, testOfferUsed: false }
-          : {}),
         accountStatus: "active",
         accountClosed: false,
         acceptCgu: true,

@@ -1,9 +1,5 @@
 import type { HomeFirestoreImages } from "@/lib/homeFirestoreImages";
-import {
-  isTestOfferPlanId,
-  produitDocToTestCatalogEntry,
-  TEST_PANIERE_PRODUCT_NOM,
-} from "@/lib/testPaniereOffer";
+import { isTestOfferPlanId } from "@/lib/testPaniereOffer";
 
 export type CatalogImageKey = keyof Pick<
   HomeFirestoreImages,
@@ -18,7 +14,7 @@ export type ClientCatalogEntry = {
   priceLine: string;
   detailLine: string;
   bullets: string[];
-  badge?: "popular" | "family" | "test";
+  badge?: "popular" | "family";
   homeAnchor: string;
   /** Identifiant stable pour Stripe (metadata) et ancienne page récap legacy. */
   recapPlanId: string;
@@ -26,24 +22,7 @@ export type ClientCatalogEntry = {
   primaryCta?: string;
 };
 
-export {
-  isTestOfferPlanId,
-  TEST_PANIERE_PRODUCT_NOM,
-  TEST_PANIERE_RECAP_PLAN_ID,
-} from "@/lib/testPaniereOffer";
-
-/** Nouveau inscrit sans abonnement : afficher l’offre test en tête de liste. */
-export function shouldShowClientTestOffer(
-  userData: Record<string, unknown> | undefined,
-  subscribed: boolean
-): boolean {
-  if (subscribed) return false;
-  if (!userData) return false;
-  if (userData.testOfferUsed === true) return false;
-  if (userData.eligibleTestOffer !== true) return false;
-  const role = typeof userData.role === "string" ? userData.role.trim() : "";
-  return role === "aucun";
-}
+export { isTestOfferPlanId } from "@/lib/testPaniereOffer";
 
 /** Abonnements mensuels — textes alignés sur la page d’accueil publique */
 export const CLIENT_SUBSCRIPTION_ITEMS: ClientCatalogEntry[] = [
@@ -171,18 +150,7 @@ export function getCatalogEntryByRecapPlanId(
   recapPlanId: string
 ): ClientCatalogEntry | undefined {
   const id = recapPlanId.trim();
-  if (isTestOfferPlanId(id)) {
-    return produitDocToTestCatalogEntry({
-      nom: TEST_PANIERE_PRODUCT_NOM,
-      prix: 1,
-      kg: 2.5,
-      collecte: 1,
-      description:
-        "Votre première panière de 2.5Kg (Environ 15 à 20 vêtements)",
-      avantages:
-        "Environ 15 à 20 vêtements - 2.5Kg - pour 1€",
-    });
-  }
+  if (isTestOfferPlanId(id)) return undefined;
   return [
     ...CLIENT_SUBSCRIPTION_ITEMS,
     ...CLIENT_PACK_ITEMS,

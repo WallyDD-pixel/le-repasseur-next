@@ -12,8 +12,6 @@ import {
   loadHomeFirestoreImages,
   type HomeFirestoreImages,
 } from "@/lib/homeFirestoreImages";
-import { fetchTestPaniereCatalogEntry } from "@/lib/testPaniereOffer";
-import { getFirebaseFirestore } from "@/lib/firebase";
 
 /** Cadre produit : image en pleine largeur/hauteur (object-cover), sans bandes latérales. */
 const CATALOG_IMG_OUTER =
@@ -97,21 +95,15 @@ function CatalogCard({
   const detailsPanelId = useId();
   const primaryCta = item.primaryCta ?? "S'abonner";
   const tag =
-    item.badge === "test"
-      ? "À essayer"
-      : item.badge === "popular"
-        ? "Top vente"
-        : item.badge === "family"
-          ? "Familles"
-          : null;
+    item.badge === "popular"
+      ? "Top vente"
+      : item.badge === "family"
+        ? "Familles"
+        : null;
 
   return (
     <article
-      className={`group/card flex h-fit min-h-0 w-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_24px_-6px_rgba(16,41,75,0.12)] ring-1 transition duration-300 hover:shadow-[0_16px_48px_-12px_rgba(16,41,75,0.2)] lg:grid lg:grid-cols-[minmax(200px,32%)_minmax(0,1fr)] lg:grid-rows-[auto] lg:items-stretch lg:gap-0 ${
-        item.badge === "test"
-          ? "ring-2 ring-[#CE2029]/40 hover:ring-[#CE2029]/55"
-          : "ring-slate-200/50 hover:ring-slate-300/60"
-      }`}
+      className="group/card flex h-fit min-h-0 w-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_24px_-6px_rgba(16,41,75,0.12)] ring-1 ring-slate-200/50 transition duration-300 hover:shadow-[0_16px_48px_-12px_rgba(16,41,75,0.2)] hover:ring-slate-300/60 lg:grid lg:grid-cols-[minmax(200px,32%)_minmax(0,1fr)] lg:grid-rows-[auto] lg:items-stretch lg:gap-0"
     >
       {/*
         Mobile : ratio 4/3 (plus compact que l’ancien 9/16). Desktop : colonne image alignée sur la hauteur du texte.
@@ -224,30 +216,18 @@ function CatalogCard({
 export function ClientProductCatalog({
   subscribed,
   currentRole,
-  showTestOffer = false,
   beforeSubscriptions,
 }: {
   subscribed: boolean;
   currentRole?: string;
-  /** Offre découverte 1 € en tête de liste (nouveaux inscrits). */
-  showTestOffer?: boolean;
   /** Contenu inséré après l’intro, juste avant « Changer d’abonnement ». */
   beforeSubscriptions?: ReactNode;
 }) {
   const [images, setImages] = useState<HomeFirestoreImages>({});
-  const [testOffer, setTestOffer] = useState<ClientCatalogEntry | null>(null);
 
   useEffect(() => {
     loadHomeFirestoreImages().then(setImages);
   }, []);
-
-  useEffect(() => {
-    if (!showTestOffer) {
-      setTestOffer(null);
-      return;
-    }
-    fetchTestPaniereCatalogEntry(getFirebaseFirestore()).then(setTestOffer);
-  }, [showTestOffer]);
 
   const packs = subscribed ? CLIENT_SUBSCRIBER_PACK_ITEMS : CLIENT_PACK_ITEMS;
   const normalizedCurrent = currentRole?.trim().toLowerCase() ?? "";
@@ -268,33 +248,6 @@ export function ClientProductCatalog({
         </div>
       </div>
 
-      {showTestOffer ? (
-        <section
-          id="try-service"
-          aria-labelledby="try-service-heading"
-          className="scroll-mt-24"
-        >
-          <SectionHeading
-            id="try-service-heading"
-            step="★"
-            title="Tester le service pour 1 €"
-            subtitle="Votre première panière : découvrez Le Repasseur sans vous engager sur un abonnement mensuel."
-          />
-          {testOffer ? (
-            <CatalogCard
-              item={testOffer}
-              imageUrl={images[testOffer.imageKey]}
-            />
-          ) : (
-            <div
-              className="h-48 animate-pulse rounded-2xl bg-slate-100"
-              aria-busy="true"
-              aria-label="Chargement de l’offre test"
-            />
-          )}
-        </section>
-      ) : null}
-
       {beforeSubscriptions ? (
         <div className="space-y-8">{beforeSubscriptions}</div>
       ) : null}
@@ -302,7 +255,7 @@ export function ClientProductCatalog({
       <section aria-labelledby="choose-abo" className="scroll-mt-24">
         <SectionHeading
           id="choose-abo"
-          step={showTestOffer ? "2" : "1"}
+          step="1"
           title={subscribed ? "Changer d’abonnement" : "Choisir un abonnement"}
           subtitle="Chaque ligne est une formule mensuelle : comparez les volumes, puis un récapitulatif sur ce site avant le paiement sécurisé Stripe."
         />
@@ -324,7 +277,7 @@ export function ClientProductCatalog({
       <section aria-labelledby="choose-pack" className="scroll-mt-24">
         <SectionHeading
           id="choose-pack"
-          step={showTestOffer ? "3" : "2"}
+          step="2"
           title={subscribed ? "Recharges pour abonnés" : "Sans abonnement"}
           subtitle={
             subscribed
