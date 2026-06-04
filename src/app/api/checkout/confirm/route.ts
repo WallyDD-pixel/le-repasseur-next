@@ -13,6 +13,7 @@ import { isTestOfferPlanId } from "@/lib/testPaniereOffer";
 import { getAdminFirestore, getFirebaseAdminApp } from "@/server/firebaseAdmin";
 import { verifyFirebaseUserIdToken } from "@/server/firebaseIdTokenVerify";
 import { resolveStripeSecret } from "@/server/stripeConfigResolve";
+import { syncSubscriptionPriceBeforeRenewal } from "@/server/stripeSubscriptionPromoPrice";
 
 function readString(body: unknown, key: string): string {
   if (typeof body !== "object" || body === null) return "";
@@ -175,6 +176,22 @@ export async function POST(req: NextRequest) {
 
       await txRef.set(txPayload, { merge: true });
       await userRef.set(updates, { merge: true });
+
+      if (isSub && stripeSubscriptionId) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId, {
+            expand: ["items.data.price.product"],
+          });
+          await syncSubscriptionPriceBeforeRenewal({
+            stripe,
+            db,
+            subscription: sub,
+            uid: user.uid,
+          });
+        } catch (e) {
+          console.error("[checkout/confirm] Alignement prix abonnement :", e);
+        }
+      }
     } else {
       await txRef.set(txPayload, { merge: true });
     }

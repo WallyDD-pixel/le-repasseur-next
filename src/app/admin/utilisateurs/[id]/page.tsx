@@ -41,6 +41,8 @@ export default function ModifierUtilisateurPage() {
   const [codePostal, setCodePostal] = useState("");
   const [kg, setKg] = useState("");
   const [reservations, setReservations] = useState("");
+  const [promoAbonnement, setPromoAbonnement] = useState("");
+  const [promoProduit, setPromoProduit] = useState("");
   const [roleOptions, setRoleOptions] = useState<string[]>([
     "aucun",
     "admin",
@@ -108,6 +110,22 @@ export default function ModifierUtilisateurPage() {
             ? r
             : "0"
       );
+      const pa = data.promoAbonnementPourcent ?? data.promoAbonnementPercent;
+      setPromoAbonnement(
+        typeof pa === "number"
+          ? String(pa)
+          : typeof pa === "string"
+            ? pa
+            : ""
+      );
+      const pp = data.promoProduitPourcent ?? data.promoProduitPercent;
+      setPromoProduit(
+        typeof pp === "number"
+          ? String(pp)
+          : typeof pp === "string"
+            ? pp
+            : ""
+      );
       setStampSignupDatesOnSave(userDocLacksSignupTimestamps(data));
     } catch (err) {
       setError(`Impossible de charger le profil — ${firebaseMessage(err)}`);
@@ -129,6 +147,20 @@ export default function ModifierUtilisateurPage() {
       const db = getFirebaseFirestore();
       const kgNum = kg.trim() === "" ? null : Number.parseFloat(kg.replace(",", "."));
       const resNum = Number.parseInt(reservations, 10);
+      const promoA = promoAbonnement.trim() === ""
+        ? 0
+        : Number.parseFloat(promoAbonnement.replace(",", "."));
+      const promoP = promoProduit.trim() === ""
+        ? 0
+        : Number.parseFloat(promoProduit.replace(",", "."));
+      if (
+        (promoAbonnement.trim() !== "" && (Number.isNaN(promoA) || promoA < 0 || promoA > 100)) ||
+        (promoProduit.trim() !== "" && (Number.isNaN(promoP) || promoP < 0 || promoP > 100))
+      ) {
+        setError("Les pourcentages de promo doivent être entre 0 et 100.");
+        setSaving(false);
+        return;
+      }
       await updateDoc(doc(db, USERS_COLLECTION, userId), {
         prenom: prenom.trim(),
         nom: nom.trim(),
@@ -141,6 +173,8 @@ export default function ModifierUtilisateurPage() {
         ...(Number.isFinite(resNum) && resNum >= 0
           ? { reservations: resNum }
           : { reservations: 0 }),
+        promoAbonnementPourcent: Number.isFinite(promoA) ? promoA : 0,
+        promoProduitPourcent: Number.isFinite(promoP) ? promoP : 0,
         ...(stampSignupDatesOnSave
           ? {
               createdAt: serverTimestamp(),
@@ -272,6 +306,49 @@ export default function ModifierUtilisateurPage() {
             />
           </div>
         </div>
+        <section className="rounded-xl border border-[#10294B]/15 bg-[#10294B]/[0.03] px-4 py-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#10294B]">
+            Promotions personnelles
+          </h2>
+          <p className="mt-2 text-xs leading-relaxed text-slate-600">
+            Réduction en % sur le <strong>tarif catalogue actuel</strong> (Firestore).
+            S&apos;applique au prochain paiement Stripe et à chaque renouvellement
+            d&apos;abonnement. Utile pour conserver l&apos;ancien prix après une hausse :
+            ex. ancien 39&nbsp;€, nouveau catalogue 49&nbsp;€ → promo ≈{" "}
+            <strong>20,4</strong> (100 × (1 − 39/49)).
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="user-promo-abo">Promo abonnement (%)</Label>
+              <Input
+                id="user-promo-abo"
+                inputMode="decimal"
+                placeholder="0"
+                value={promoAbonnement}
+                onChange={(e) => setPromoAbonnement(e.target.value)}
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Renouvellements mensuels et nouvelle souscription.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="user-promo-prod">Promo produits (%)</Label>
+              <Input
+                id="user-promo-prod"
+                inputMode="decimal"
+                placeholder="0"
+                value={promoProduit}
+                onChange={(e) => setPromoProduit(e.target.value)}
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Packs et recharges (achat ponctuel).
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="user-kg">Kg</Label>

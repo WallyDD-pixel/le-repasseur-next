@@ -9,6 +9,7 @@ import {
 } from "@/lib/planCreditsResolve";
 import { getAdminFirestore } from "@/server/firebaseAdmin";
 import { resolveStripeSubscriptionContext } from "@/lib/stripeSubscriptionResolve";
+import { syncSubscriptionPriceBeforeRenewal } from "@/server/stripeSubscriptionPromoPrice";
 import { resolveStripeSecret } from "@/server/stripeConfigResolve";
 
 export const runtime = "nodejs";
@@ -24,72 +25,73 @@ async function uidFromEmail(
   return q.docs[0]!.id;
 }
 
-export async function POST(req: NextRequest) {
-  const secretKey = await resolveStripeSecret();
-  if (!secretKey) {
-    return NextResponse.json(
-      { error: "STRIPE secret key introuvable." },
-      { status: 503 }
-    );
-  }
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-  if (!webhookSecret) {
-    return NextResponse.json(
-      { error: "STRIPE_WEBHOOK_SECRET manquant." },
-      { status: 503 }
-    );
-  }
-
-  const db = getAdminFirestore();
-  if (!db) {
-    return NextResponse.json(
-      { error: "Firestore Admin indisponible." },
-      { status: 503 }
-    );
-  }
-
-  const sig = req.headers.get("stripe-signature");
-  if (!sig) {
-    return NextResponse.json(
-      { error: "En-tête stripe-signature manquant." },
-      { status: 400 }
-    );
-  }
-
-  const rawBody = await req.text();
-  const stripe = new Stripe(secretKey);
-
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Signature webhook invalide.";
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-
-  if (event.type !== "invoice.paid") {
-    return NextResponse.json({ ok: true, ignored: event.type });
-  }
-
-  const invoice = event.data.object as Stripe.Invoice;
+function invoiceSubscriptionId(invoice: Stripe.Invoice): string | undefined {
   const invoiceLike = invoice as unknown as Record<string, unknown>;
+  const invoiceSub = invoiceLike.subscription as string | { id?: string } | undefined;
+  if (typeof invoiceSub === "string") return invoiceSub;
+  if (typeof invoiceSub?.id === "string") return invoiceSub.id;
+  return undefined;
+}
 
-  // Renouvellement automatique uniquement (évite doublon avec confirmation checkout initiale).
+async function handleInvoiceUpcoming(
+  stripe: Stripe,
+  db: admin.firestore.Firestore,
+  invoice: Stripe.Invoice
+) {
+  const subId = invoiceSubscriptionId(invoice);
+  if (!subId) {
+    return NextResponse.json({ ok: true, ignored: "no_subscription" });
+  }
+
+  let sub: Stripe.Subscription;
+  try {
+    sub = await stripe.subscriptions.retrieve(subId, {
+      expand: ["items.data.price.product"],
+    });
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "Impossible de récupérer l’abonnement.";
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
+
+  const { firebaseUid, customerEmail } = await resolveStripeSubscriptionContext(
+    stripe,
+    sub,
+    invoice
+  );
+
+  let uid = firebaseUid;
+  if (!uid && customerEmail) {
+    uid = (await uidFromEmail(db, customerEmail)) || "";
+  }
+  if (!uid) {
+    return NextResponse.json({ ok: true, ignored: "user_not_found" });
+  }
+
+  const sync = await syncSubscriptionPriceBeforeRenewal({
+    stripe,
+    db,
+    subscription: sub,
+    uid,
+  });
+
+  return NextResponse.json({ ok: true, priceSync: sync });
+}
+
+async function handleInvoicePaid(
+  stripe: Stripe,
+  db: admin.firestore.Firestore,
+  invoice: Stripe.Invoice
+) {
   if (invoice.billing_reason !== "subscription_cycle") {
-    return NextResponse.json({ ok: true, ignored: invoice.billing_reason || "n/a" });
+    return NextResponse.json({
+      ok: true,
+      ignored: invoice.billing_reason || "n/a",
+    });
   }
 
   const invoiceId = invoice.id;
-  const invoiceSub = invoiceLike.subscription as
-    | string
-    | { id?: string }
-    | undefined;
-  const subId =
-    typeof invoiceSub === "string"
-      ? invoiceSub
-      : typeof invoiceSub?.id === "string"
-        ? invoiceSub.id
-        : undefined;
+  const subId = invoiceSubscriptionId(invoice);
   if (!subId) {
     return NextResponse.json(
       { error: "invoice.subscription manquant." },
@@ -175,3 +177,60 @@ export async function POST(req: NextRequest) {
   });
 }
 
+export async function POST(req: NextRequest) {
+  const secretKey = await resolveStripeSecret();
+  if (!secretKey) {
+    return NextResponse.json(
+      { error: "STRIPE secret key introuvable." },
+      { status: 503 }
+    );
+  }
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  if (!webhookSecret) {
+    return NextResponse.json(
+      { error: "STRIPE_WEBHOOK_SECRET manquant." },
+      { status: 503 }
+    );
+  }
+
+  const db = getAdminFirestore();
+  if (!db) {
+    return NextResponse.json(
+      { error: "Firestore Admin indisponible." },
+      { status: 503 }
+    );
+  }
+
+  const sig = req.headers.get("stripe-signature");
+  if (!sig) {
+    return NextResponse.json(
+      { error: "En-tête stripe-signature manquant." },
+      { status: 400 }
+    );
+  }
+
+  const rawBody = await req.text();
+  const stripe = new Stripe(secretKey);
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Signature webhook invalide.";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
+
+  if (event.type === "invoice.upcoming") {
+    return handleInvoiceUpcoming(
+      stripe,
+      db,
+      event.data.object as Stripe.Invoice
+    );
+  }
+
+  if (event.type === "invoice.paid") {
+    return handleInvoicePaid(stripe, db, event.data.object as Stripe.Invoice);
+  }
+
+  return NextResponse.json({ ok: true, ignored: event.type });
+}
