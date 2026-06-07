@@ -7,6 +7,7 @@ import {
 } from "@/lib/clientCatalog";
 import { getCompanyInvoiceInfo } from "@/lib/companyInvoiceConfig";
 import { labelClientTxType } from "@/lib/clientTransactions";
+import { userAddressFromFirestore } from "@/lib/userProfileFirestore";
 import type { SiteInvoiceData } from "@/server/generateInvoicePdf";
 
 function str(v: unknown): string {
@@ -55,18 +56,23 @@ function clientNameFromUser(user: Record<string, unknown>): string {
   return str(user.displayName) || str(user.email) || "Client";
 }
 
+function isBuildingComplement(text: string): boolean {
+  return /^(bat|appart|appt|résidence|residence|étage|etage|bât|bâtiment|lot|esc|porte|bp)/i.test(
+    text.trim()
+  );
+}
+
 function clientAddressLines(user: Record<string, unknown>): string[] {
+  const addr = userAddressFromFirestore(user);
   const lines: string[] = [];
-  const numero = str(user.numero);
-  const voie = str(user.voie);
-  const street = `${numero} ${voie}`.trim();
-  const complement = str(user.complementAdresse);
-  const cp = str(user.codePostal);
-  const ville = str(user.ville);
-  const cityLine = `${cp} ${ville}`.trim();
+  const street = `${addr.numero} ${addr.voie}`.trim();
+  const cityLine = `${addr.codePostal} ${addr.ville}`.trim();
+  const complement = addr.complementAdresse.trim();
 
   if (street) lines.push(street);
-  if (complement) lines.push(complement);
+  if (complement && isBuildingComplement(complement)) {
+    lines.push(complement);
+  }
   if (cityLine) lines.push(cityLine);
 
   const tel = str(user.telephone);

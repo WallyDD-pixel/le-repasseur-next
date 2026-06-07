@@ -202,49 +202,58 @@ export async function generateSiteInvoicePdf(
     y -= 12;
   }
 
-  let clientY = emitterStartY;
-  const clientX = width / 2 + 12;
+  const CLIENT_PAD = 12;
+  const CLIENT_LINE_H = 13;
+  const clientX = width / 2 + 8;
+  const clientBoxWidth = width - margin - clientX + CLIENT_PAD;
+
+  const clientContentLines: { text: string; bold?: boolean; size?: number }[] = [
+    { text: data.clientName, bold: true, size: 10 },
+  ];
+  if (data.clientEmail) {
+    clientContentLines.push({ text: data.clientEmail });
+  }
+  for (const line of data.clientAddressLines) {
+    clientContentLines.push({ text: line });
+  }
+
+  const clientBlockH =
+    CLIENT_PAD * 2 + 16 + clientContentLines.length * CLIENT_LINE_H;
+  const clientTop = emitterStartY;
+
   page.drawRectangle({
-    x: clientX - 12,
-    y: clientY - 108,
-    width: width - margin - clientX + 12,
-    height: 108,
+    x: clientX - CLIENT_PAD,
+    y: clientTop - clientBlockH,
+    width: clientBoxWidth,
+    height: clientBlockH,
     color: LIGHT,
     borderColor: rgb(0.88, 0.9, 0.93),
     borderWidth: 1,
   });
+
+  let clientBaseline = clientTop - CLIENT_PAD - 10;
   page.drawText("Client", {
     x: clientX,
-    y: clientY,
+    y: clientBaseline,
     size: 9,
     font: fontBold,
     color: RED,
   });
-  clientY -= 14;
-  page.drawText(data.clientName, {
-    x: clientX,
-    y: clientY,
-    size: 10,
-    font: fontBold,
-    color: NAVY,
-  });
-  clientY -= 14;
-  if (data.clientEmail) {
-    page.drawText(data.clientEmail, {
+  clientBaseline -= 18;
+
+  for (const item of clientContentLines) {
+    page.drawText(item.text, {
       x: clientX,
-      y: clientY,
-      size: 9,
-      font,
-      color: SLATE,
+      y: clientBaseline,
+      size: item.size ?? 9,
+      font: item.bold ? fontBold : font,
+      color: item.bold ? NAVY : SLATE,
     });
-    clientY -= 12;
-  }
-  for (const line of data.clientAddressLines) {
-    page.drawText(line, { x: clientX, y: clientY, size: 9, font, color: SLATE });
-    clientY -= 12;
+    clientBaseline -= CLIENT_LINE_H;
   }
 
-  y = Math.min(y, clientY - 16) - 8;
+  const clientBottom = clientTop - clientBlockH;
+  y = Math.min(y, clientBottom - 16);
 
   page.drawRectangle({
     x: margin,
@@ -271,62 +280,74 @@ export async function generateSiteInvoicePdf(
   });
   y -= 36;
 
+  const TABLE_HEADER_H = 24;
+  const ROW_PAD = 10;
+  const ROW_LINE_H = 12;
+  const ROW_MIN_H = 30;
+  const amountColX = width - margin - 82;
+
   const tableTop = y;
   page.drawRectangle({
     x: margin,
-    y: tableTop - 24,
+    y: tableTop - TABLE_HEADER_H,
     width: contentWidth,
-    height: 24,
+    height: TABLE_HEADER_H,
     color: NAVY,
   });
   page.drawText("Désignation", {
     x: margin + 12,
-    y: tableTop - 16,
+    y: tableTop - TABLE_HEADER_H + 8,
     size: 9,
     font: fontBold,
     color: WHITE,
   });
   page.drawText("Montant net", {
-    x: width - margin - 82,
-    y: tableTop - 16,
+    x: amountColX,
+    y: tableTop - TABLE_HEADER_H + 8,
     size: 9,
     font: fontBold,
     color: WHITE,
   });
 
-  y = tableTop - 38;
+  let rowBottom = tableTop - TABLE_HEADER_H;
   for (const line of data.lines) {
     const wrapped = wrapText(line.label, 62);
-    const rowHeight = Math.max(wrapped.length * 12, 14) + 10;
+    const rowHeight = Math.max(
+      ROW_MIN_H,
+      wrapped.length * ROW_LINE_H + ROW_PAD * 2
+    );
+    rowBottom -= rowHeight;
+
     page.drawRectangle({
       x: margin,
-      y: y - rowHeight + 6,
+      y: rowBottom,
       width: contentWidth,
       height: rowHeight,
       color: WHITE,
       borderColor: rgb(0.92, 0.94, 0.96),
       borderWidth: 1,
     });
+
+    const firstBaseline = rowBottom + rowHeight - ROW_PAD - 9;
     for (let i = 0; i < wrapped.length; i++) {
       page.drawText(wrapped[i]!, {
         x: margin + 12,
-        y: y - i * 12,
+        y: firstBaseline - i * ROW_LINE_H,
         size: 9,
         font,
         color: SLATE,
       });
     }
     page.drawText(formatEuros(line.amountEuros), {
-      x: width - margin - 82,
-      y,
+      x: amountColX,
+      y: firstBaseline,
       size: 9,
       font: fontBold,
       color: NAVY,
     });
-    y -= rowHeight + 4;
   }
 
-  y -= 4;
+  y = rowBottom - 16;
   page.drawRectangle({
     x: width - margin - 190,
     y: y - 30,
@@ -344,7 +365,7 @@ export async function generateSiteInvoicePdf(
     color: NAVY,
   });
   page.drawText(formatEuros(data.totalEuros), {
-    x: width - margin - 82,
+    x: amountColX,
     y: y - 19,
     size: 12,
     font: fontBold,
