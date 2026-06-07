@@ -5,15 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import {
-  Timestamp,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { EspaceClientAccountFooter } from "@/components/espace-client/EspaceClientAccountFooter";
 import { ClientProductCatalog } from "@/components/espace-client/ClientProductCatalog";
 import { ClientTransactionsHistory } from "@/components/espace-client/ClientTransactionsHistory";
@@ -28,6 +20,7 @@ import {
   type ReservationAdminRow,
 } from "@/lib/reservationsAdmin";
 import { firebaseMessage } from "@/lib/firebaseError";
+import type { ClientTransactionRow } from "@/lib/clientTransactions";
 import { PageShell } from "@/components/shell/PageShell";
 import { BackLink } from "@/components/ui/BackLink";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -80,56 +73,57 @@ function normalizeReservationsDisplay(data: Record<string, unknown>): string {
   return "0";
 }
 
-type MyTxRow = {
-  id: string;
-  date: Date | null;
-  type: string;
-  titre: string;
-  montantDisplay: string;
-};
-
-function toDate(raw: unknown): Date | null {
-  if (raw instanceof Timestamp) return raw.toDate();
-  if (
-    raw &&
-    typeof raw === "object" &&
-    "toDate" in raw &&
-    typeof (raw as { toDate: () => Date }).toDate === "function"
-  ) {
-    try {
-      return (raw as { toDate: () => Date }).toDate();
-    } catch {
-      return null;
-    }
-  }
-  if (typeof raw === "string" || typeof raw === "number") {
-    const d = new Date(raw);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  return null;
-}
-
 function formatTxDate(d: Date | null): string {
   if (!d) return "—";
   return d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 }
 
-function formatTxAmount(raw: unknown): string {
-  if (typeof raw === "number" && Number.isFinite(raw)) return `${raw} €`;
-  if (typeof raw === "string" && raw.trim()) {
-    const t = raw.trim();
-    return t.includes("€") ? t : `${t} €`;
+async function loadClientTransactions(
+  idToken: string
+): Promise<ClientTransactionRow[]> {
+  try {
+    const res = await fetch("/api/client/transactions", {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      rows?: Array<
+        Omit<ClientTransactionRow, "date"> & { date: string | null }
+      >;
+    };
+    if (!res.ok || !data.ok || !Array.isArray(data.rows)) return [];
+    return data.rows.map((r) => ({
+      ...r,
+      date: r.date ? new Date(r.date) : null,
+    }));
+  } catch {
+    return [];
   }
-  return "—";
 }
 
-function labelTxType(raw: unknown): string {
-  const t = str(raw).toLowerCase();
-  if (!t) return "Paiement";
-  if (t.includes("renouvel")) return "Renouvellement";
-  if (t.includes("abonn")) return "Abonnement";
-  if (t.includes("paiement")) return "Paiement";
-  return str(raw) || "Paiement";
+async function downloadSiteInvoicePdf(transactionId: string): Promise<void> {
+  const u = getFirebaseAuth().currentUser;
+  if (!u) return;
+  try {
+    const idToken = await u.getIdToken();
+    const res = await fetch(
+      `/api/client/invoice-pdf?transactionId=${encodeURIComponent(transactionId)}`,
+      { headers: { Authorization: `Bearer ${idToken}` } }
+    );
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] ?? `facture-${transactionId}.pdf`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    /* ignore */
+  }
 }
 
 function AppStoreBadgeRow() {
@@ -203,7 +197,7 @@ function EspaceClientPageContent() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [collectesDisplay, setCollectesDisplay] = useState("0");
   const [poidsDisplay, setPoidsDisplay] = useState("0 kg");
-  const [txRows, setTxRows] = useState<MyTxRow[]>([]);
+  const [txRows, setTxRows] = useState<ClientTransactionRow[]>([]);
   const [reservationRows, setReservationRows] = useState<ReservationAdminRow[]>(
     []
   );
@@ -251,24 +245,8 @@ function EspaceClientPageContent() {
       }
 
       try {
-        const txSnap = await getDocs(
-          query(collection(db, "transactions"), where("userId", "==", u.uid))
-        );
-        const rows: MyTxRow[] = [];
-        txSnap.forEach((d) => {
-          const data = d.data() as Record<string, unknown>;
-          rows.push({
-            id: d.id,
-            date: toDate(data.transactionDate ?? data.date ?? data.createdAt),
-            type: labelTxType(data.type),
-            titre: str(data.titre) || str(data.role) || "Paiement",
-            montantDisplay: formatTxAmount(data.montant ?? data.amount ?? data.prix),
-          });
-        });
-        rows.sort(
-          (x, y) => (y.date?.getTime() ?? 0) - (x.date?.getTime() ?? 0)
-        );
-        setTxRows(rows);
+        const idToken = await u.getIdToken();
+        setTxRows(await loadClientTransactions(idToken));
       } catch {
         setTxRows([]);
       }
@@ -346,24 +324,8 @@ function EspaceClientPageContent() {
           setCollectesDisplay(normalizeReservationsDisplay(userData));
           setPoidsDisplay(normalizeKgDisplay(userData));
         }
-        const txSnap = await getDocs(
-          query(collection(getFirebaseFirestore(), "transactions"), where("userId", "==", u.uid))
-        );
-        const rows: MyTxRow[] = [];
-        txSnap.forEach((d) => {
-          const data = d.data() as Record<string, unknown>;
-          rows.push({
-            id: d.id,
-            date: toDate(data.transactionDate ?? data.date ?? data.createdAt),
-            type: labelTxType(data.type),
-            titre: str(data.titre) || str(data.role) || "Paiement",
-            montantDisplay: formatTxAmount(data.montant ?? data.amount ?? data.prix),
-          });
-        });
-        rows.sort(
-          (x, y) => (y.date?.getTime() ?? 0) - (x.date?.getTime() ?? 0)
-        );
-        setTxRows(rows);
+        const idToken = await u.getIdToken();
+        setTxRows(await loadClientTransactions(idToken));
       } catch {
         /* ignore */
       }
@@ -439,6 +401,7 @@ function EspaceClientPageContent() {
               <ClientTransactionsHistory
                 rows={txRows}
                 formatDate={formatTxDate}
+                onDownloadSiteInvoice={downloadSiteInvoicePdf}
               />
               {subscribed ? (
                 <div className="flex gap-4 rounded-2xl border-l-4 border-[#CE2029] bg-gradient-to-r from-[#CE2029]/[0.08] to-transparent px-5 py-4 lg:max-w-4xl">

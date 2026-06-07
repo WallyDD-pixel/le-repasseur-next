@@ -22,6 +22,13 @@ export const COVERED_COMMUNES: CoveredCommune[] = [
   { postalCodes: ["06580"], city: "Pégomas" },
   { postalCodes: ["06550"], city: "La Roquette-sur-Siagne" },
   { postalCodes: ["06590"], city: "Théoule-sur-Mer" },
+  // Var (83)
+  { postalCodes: ["83600"], city: "Fréjus" },
+  { postalCodes: ["83700"], city: "Saint-Raphaël" },
+  { postalCodes: ["83370"], city: "Saint-Aygulf" },
+  { postalCodes: ["83520"], city: "Roquebrune-sur-Argens" },
+  { postalCodes: ["83480", "83099"], city: "Puget-sur-Argens" },
+  { postalCodes: ["83120"], city: "Sainte-Maxime" },
 ];
 
 const COVERED_SET = new Set(

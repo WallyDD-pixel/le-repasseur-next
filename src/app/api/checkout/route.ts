@@ -10,6 +10,11 @@ import { getAdminFirestore, getFirebaseAdminApp } from "@/server/firebaseAdmin";
 import { resolveCheckoutEuroCents } from "@/server/checkoutEuroCentsResolve";
 import { verifyFirebaseUserIdToken } from "@/server/firebaseIdTokenVerify";
 import {
+  ensureStripeCustomerLinked,
+  resolveStripeCustomerIdForCheckout,
+  userHasActiveStripeSubscription,
+} from "@/server/checkoutStripeCustomer";
+import {
   resolveStripePriceId,
   resolveStripeSecret,
 } from "@/server/stripeConfigResolve";
@@ -77,17 +82,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let userDocData: Record<string, unknown> | null = null;
   if (firebaseUser?.uid) {
     const db = getAdminFirestore();
     if (db) {
       try {
         const u = await db.collection("users").doc(firebaseUser.uid).get();
-        const d = (u.data() ?? {}) as Record<string, unknown>;
+        userDocData = (u.data() ?? {}) as Record<string, unknown>;
         const closed =
-          d.accountClosed === true ||
-          d.compteFerme === true ||
-          (typeof d.accountStatus === "string" &&
-            d.accountStatus.trim().toLowerCase() === "closed");
+          userDocData.accountClosed === true ||
+          userDocData.compteFerme === true ||
+          (typeof userDocData.accountStatus === "string" &&
+            userDocData.accountStatus.trim().toLowerCase() === "closed");
         if (closed) {
           return NextResponse.json(
             {
@@ -191,6 +197,44 @@ export async function POST(req: NextRequest) {
   if (checkoutCustomerEmail) extraMeta.userEmail = checkoutCustomerEmail;
   if (firebaseUser?.name) extraMeta.userName = firebaseUser.name;
 
+  const storedStripeCustomerId =
+    typeof userDocData?.stripeCustomerId === "string"
+      ? userDocData.stripeCustomerId.trim()
+      : undefined;
+
+  const checkoutUserCtx = firebaseUser?.uid
+    ? {
+        uid: firebaseUser.uid,
+        email: checkoutCustomerEmail,
+        name: firebaseUser.name,
+        storedCustomerId: storedStripeCustomerId,
+      }
+    : null;
+
+  if (checkoutUserCtx && mode === "subscription") {
+    const active = await userHasActiveStripeSubscription(stripe, checkoutUserCtx);
+    if (active.active) {
+      return NextResponse.json(
+        {
+          error:
+            "Vous avez déjà un abonnement actif. Rendez-vous dans votre espace client pour gérer votre formule (aucun second paiement n’est nécessaire).",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
+  let stripeCustomerId: string | null = null;
+  if (checkoutUserCtx) {
+    stripeCustomerId = await resolveStripeCustomerIdForCheckout(
+      stripe,
+      checkoutUserCtx
+    );
+    if (stripeCustomerId) {
+      await ensureStripeCustomerLinked(stripe, stripeCustomerId, checkoutUserCtx);
+    }
+  }
+
   const sessionStripe: Stripe.Checkout.SessionCreateParams = {
     mode,
     line_items: [lineItem],
@@ -198,9 +242,11 @@ export async function POST(req: NextRequest) {
     cancel_url: `${origin}/espace-client/recap?plan=${encodeURIComponent(planId)}&checkout=cancel`,
     metadata: extraMeta,
     ...(firebaseUser?.uid ? { client_reference_id: firebaseUser.uid } : {}),
-    ...(checkoutCustomerEmail
-      ? { customer_email: checkoutCustomerEmail }
-      : {}),
+    ...(stripeCustomerId
+      ? { customer: stripeCustomerId }
+      : checkoutCustomerEmail
+        ? { customer_email: checkoutCustomerEmail }
+        : {}),
     ...(mode === "subscription"
       ? {
           subscription_data: {

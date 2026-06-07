@@ -37,35 +37,65 @@ export type UserProfileForm = UserAddressForm & {
   telephone: string;
 };
 
+function mergeAddressRoot(data: Record<string, unknown>): Record<string, unknown> {
+  const nested = data.adresse;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    return { ...(nested as Record<string, unknown>), ...data };
+  }
+  return data;
+}
+
+function secondaryAddressRecord(
+  data: Record<string, unknown>
+): Record<string, unknown> {
+  const details = data.adresseSecondaireDetails;
+  if (details && typeof details === "object" && !Array.isArray(details)) {
+    return details as Record<string, unknown>;
+  }
+  const nested = data.adresse2;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    return nested as Record<string, unknown>;
+  }
+  return data;
+}
+
 export function userAddressFromFirestore(
   data: Record<string, unknown>
 ): UserAddressForm {
-  const details = data.adresseSecondaireDetails;
-  const sec =
-    details && typeof details === "object"
-      ? (details as Record<string, unknown>)
-      : {};
+  const root = mergeAddressRoot(data);
+  const sec = secondaryAddressRecord(data);
 
   const hasSecondary =
     data.adresseSecondaire === true ||
     data.adresseSecondaire === "oui" ||
-    str(data.adresseSecondaire).toLowerCase() === "true";
+    str(data.adresseSecondaire).toLowerCase() === "true" ||
+    str(sec.numero ?? data.numero2).length > 0 ||
+    str(sec.voie ?? data.voie2).length > 0;
 
   return {
-    societe: str(data.societe),
-    numero: str(pickFirst(data, ["numero", "numeroRue", "streetNumber"])),
-    voie: str(pickFirst(data, ["voie", "rue", "adresse", "street"])),
+    societe: str(root.societe),
+    numero: str(pickFirst(root, ["numero", "numeroRue", "streetNumber"])),
+    voie: str(pickFirst(root, ["voie", "rue", "adresse", "street"])),
     complementAdresse: str(
-      pickFirst(data, ["complementAdresse", "complement", "complement_adresse"])
+      pickFirst(root, ["complementAdresse", "complement", "complement_adresse"])
     ),
-    codePostal: str(pickFirst(data, ["codePostal", "cp"])),
-    ville: str(data.ville),
+    codePostal: str(
+      pickFirst(root, ["codePostal", "cp", "zip", "postalCode", "code_postal"])
+    ),
+    ville: str(root.ville),
     adresseSecondaire: hasSecondary ? "oui" : "non",
-    numero2: str(sec.numero),
-    voie2: str(sec.voie),
-    complementAdresse2: str(sec.complementAdresse ?? sec.complement),
-    codePostal2: str(sec.codePostal ?? sec.cp),
-    ville2: str(sec.ville),
+    numero2: str(pickFirst(sec, ["numero", "numeroRue"]) || data.numero2),
+    voie2: str(
+      pickFirst(sec, ["voie", "rue", "adresse", "street"]) || data.voie2
+    ),
+    complementAdresse2: str(
+      pickFirst(sec, ["complementAdresse", "complement", "complement_adresse"]) ||
+        data.complementAdresse2
+    ),
+    codePostal2: str(
+      pickFirst(sec, ["codePostal", "cp", "zip"]) || data.codePostal2 || data.cp2
+    ),
+    ville2: str(sec.ville ?? data.ville2),
   };
 }
 

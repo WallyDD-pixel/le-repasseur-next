@@ -1,0 +1,1336 @@
+{
+  "scannedAt": "2026-06-07T01:34:43.179Z",
+  "users": 28,
+  "transactions": 185,
+  "paymentLikeTransactions": 158,
+  "creditsAppliedTransactions": 4,
+  "missingCreditsOnPaymentTx": 50,
+  "issuesTotal": 152,
+  "byKind": {
+    "stripe_checkout_missing_credits": 0,
+    "stripe_renewal_missing_credits": 2,
+    "legacy_log_no_credits_flag": 33,
+    "credits_not_applied": 15,
+    "credits_applied_no_plan": 0,
+    "string_field": 0,
+    "subscriber_zero_balance": 0,
+    "duplicate_stripe_ref": 0,
+    "paid_tx_missing_user": 102
+  },
+  "issues": [
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "07kjPlqiqyjrTKfOQrIB",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "0Ii6mO7ijbHIJhMJkqad",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "0ccyBVkeZiANG82lpDwX",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "0p5mjEtKSZxCj8Gcwv33",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=19)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "1i4XrOughHr6EWA33vOM",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "1kdGKK7nLF9QSWC8HC6y",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5tWJrOjmpbSxh1DIvw9bNtX89f33",
+      "txId": "1vZvue0AhauLaBxfDDwx",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "admin"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "2vyIOp4a9WairlRjsG9S",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "3kqlJpDUP6nlvZpgrDlN",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "3xP7DL1BEsVaOdAyPSYo",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "7MmYAqenbROs8ovJ96dzFdLgtKC3",
+      "txId": "453OTdl2hwWzWz2qiloF",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "4jZxaGE8ojjrIJL0ZdGY",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=199)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "O0xF9gAWpnQlDFSnjiTXAFAdYh83",
+      "txId": "4kXp4xaw6gnYsAbQu6RA",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "5EwTx5BmGBuou5MKeTO6",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6SKm5MyPBHZBAwje4z8H6nkbNMk1",
+      "txId": "5aK4g26rVD1V320f8MWV",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Super Héros"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "nkDi1IqiLIPJ96itOUYzJDG9mxp2",
+      "txId": "5zpaBeGgZcY2wy6uihNJ",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "XNHjyNyEjcObJOLHYPl2lbwEJkt1",
+      "txId": "6LqjVCWZbyk22kMNq0y3",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "787Vbp6NcpuTEDyrzaDE",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=39)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "7CeCBAZion8Xa8yXQcah",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "DkdWBPZsPoPUpZTjX4U1YbZdlIx1",
+      "txId": "7NW6WvTiOvGuBsMC2sx6",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "8PUAtBKg5ew2qdCqb2vu",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "9HYtzGdga0JGEu0niZ5o",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "9pYIyQOdpU5EolVxfaWK",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "9tNzTnznHeieWQ23pDhh",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6jFxlAryFWYyxF68VFgMgJm5VC72",
+      "txId": "AZUYstF2KcKcDODiLBcn",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "AnHCNFgtHUAsrjXzzpXK",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "BGGzkyQS3hPZPs86H3IJ",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "BJWmfMPe6ynAED22zO8O",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement initial, montant=19)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "jylXJYwpuEXi7fHGek2aUYRiIcA3",
+      "txId": "Bt4wtT29kg5NYmbAc8sD",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "RhxIrQ2ZsAWjZJzC5AqDTGeBbnN2",
+      "txId": "BvbzvqqqTo6bZodqU4jt",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "7MmYAqenbROs8ovJ96dzFdLgtKC3",
+      "txId": "BxJx7j1GD3KHDkKmZZox",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "Cr4J3mhAqkhh6f96qykH",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "CywvShtQCcRB2NnxbmRE",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "E7Ipoy4zHqZOBLTDyFms",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=39)."
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "EGFuxh7w212ztoRjUMgR",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=199)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "ELkt4gymmtqpgRbJbZqj",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "EbHqlo0qJoSdCjHdiE3B",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=19)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "HCRhzSXTMPMt0cqge0hL",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "HHhQF1FY1aWwvGjUxinh",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "7MmYAqenbROs8ovJ96dzFdLgtKC3",
+      "txId": "Hmo41eXYwdQ9ViGjIKGL",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "HymPrrbRv3PMDdwDLnPb",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "Ik931w10s6v1yGgGM1GT",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "BSpESCf0CTQIvS0tGYvgLEfYnbn1",
+      "txId": "IvFNIeTkeiBBbJWOm4Sq",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "vmImbLiHhpdTJztai6hQvbjSkaJ3",
+      "txId": "J3tQH4S3Fqnzk4GLWjnK",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "foStq5fvZ3TGo8q9hyvAiuEFMic2",
+      "txId": "JAnZtPTKwTZNO1DcAZMa",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "HOGngXQhdOg9RM2QcW4Ivl7F7h62",
+      "txId": "JVD8I6TW1Wq8iaUVl0AQ",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "KChw9NdKtGLuDX1YF1tO",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "7MmYAqenbROs8ovJ96dzFdLgtKC3",
+      "txId": "KHkvOef9mScfrbsQlrV3",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "nkDi1IqiLIPJ96itOUYzJDG9mxp2",
+      "txId": "KJwXMh9Qi9ZhD9TLgDgE",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "admin"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "k11YaWgZgeaSFsX6V5EkDQdWIma2",
+      "txId": "KSWGCEsXTPnISeRRX9i3",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "KTCcAC2Szd6GK6Q8mBBs",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5tWJrOjmpbSxh1DIvw9bNtX89f33",
+      "txId": "Kn5fCmUYyACW9kb4nc1W",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "TaMVggjLtzS8qaZc2Ft44vVkJaH2",
+      "txId": "L4qDcMig8VM31F9Ox34e",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "D5k9tLYqDEVhkmwzQAu9KB5kby53",
+      "txId": "LNjT2qakJDsv5HVoOBya",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "zgvU2fG7nEUfKocG9RH6CLkK6v42",
+      "txId": "LNrEOo160AfqSz1tehVf",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5JTnS3VmfIXGcmVVbXfkprR4fZp1",
+      "txId": "Lhqk61tuWn9iiluD9a6C",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "RhxIrQ2ZsAWjZJzC5AqDTGeBbnN2",
+      "txId": "Liuj8saujb2VR08KNyhC",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "avfFDUEwQ6Ys5xt4LAcQJAYwVW62",
+      "txId": "MHFJ7gQI2sZIcadDgR3C",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "RhxIrQ2ZsAWjZJzC5AqDTGeBbnN2",
+      "txId": "MJD3gzELTs5LEAm7mdkW",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "MfndkakkoZRq1NMq0ksX",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "vmImbLiHhpdTJztai6hQvbjSkaJ3",
+      "txId": "MgCWZu1bRU4senQ9YjFO",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "NMlXfkQU86kUwV9H04fg",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=19)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "kHMqk7CflldOVLcMUv9HiuZmTen2",
+      "txId": "NZLpJUatHGWDzlpFfVg3",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6jFxlAryFWYyxF68VFgMgJm5VC72",
+      "txId": "NxRWIMSXkbUCASFixfbw",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "3I5aLf9HeDe7IVF6r0mcoi1HoOh2",
+      "txId": "PqQMRDHt6RzwswaJWqfj",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "HOGngXQhdOg9RM2QcW4Ivl7F7h62",
+      "txId": "QWi7bkWiQaXzNqmW7ew0",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "vmImbLiHhpdTJztai6hQvbjSkaJ3",
+      "txId": "RfzPGv4vpYowYXxIPeOv",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Super Héros"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "SBylQTz8OQtY0L2feBSw",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "SdETtBRQiYhvaKolqhuxhJ2RAFz2",
+      "txId": "SeM2qSRdk3AWQI16gI41",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5JTnS3VmfIXGcmVVbXfkprR4fZp1",
+      "txId": "TCTfbMN5yl6jtv5NbxUj",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5tWJrOjmpbSxh1DIvw9bNtX89f33",
+      "txId": "UKBTsfkcaykiGscwRbCn",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "admin"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "TaMVggjLtzS8qaZc2Ft44vVkJaH2",
+      "txId": "Ulb71FHOY0H6j4BwHwId",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5tWJrOjmpbSxh1DIvw9bNtX89f33",
+      "txId": "VrotiD5rBQysqUVNb9Cu",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "admin"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "XF0kekQbB6qImKyhe7dO",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "XtWCaDz7ZRLHwxsXe4Tx",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "ZCaCQQtclv2HT8Flg5mN",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "ZjSnSZ3LGBehCm8G97te",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "aIzzMKdaLZWi7SaaE2qi",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=39)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "7MmYAqenbROs8ovJ96dzFdLgtKC3",
+      "txId": "bbzH2iWR8v1C6kR9mjG2",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "c6k9JiMrkqz9NlIhmJsT",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=39)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "cOEggK5CMTqdpT12rdzC",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "cfx1TZUbA6997CW8b1CC",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=199)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "808Aq5quDlgFpV0XJp762AKUcBq2",
+      "txId": "cs_test_a10o6R4XvQIa7HAYgxGR6IbjmRqT2yGPj97Y6wdLq5TtEP9ShqhvwOtj6C",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "m5PqDm6bCZSfoAWIyLCznB8B0et1",
+      "txId": "cs_test_a13RoudU2e3p3v9UjewflhegNi85yVewdRdzoeF8njBnxeXkAJEFO41cAr",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "808Aq5quDlgFpV0XJp762AKUcBq2",
+      "txId": "cs_test_a1ILK3VFhsW9LGIAewah6DuhnCh5xwNy0DFh4jHOhsN8o4ZRvYFPg1SlKA",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Recharge 5 kg"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "808Aq5quDlgFpV0XJp762AKUcBq2",
+      "txId": "cs_test_a1Rr4BeGtCz6IFEUayCsQnw9XzMX0RhzGuqeoJc3ERtjPgQ8OZ0plKz37h",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Recharge 5 kg"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "808Aq5quDlgFpV0XJp762AKUcBq2",
+      "txId": "cs_test_a1SWrsURyCRxXqJNsY9U1ZFbleo5B35JQYcZkp9x4Aa1zgFbBYplFeWv44",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Pack 5 kg"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5VeArxpxHvMcvdu3IQLnYfJSpsV2",
+      "txId": "cs_test_a1aqQ9doi0uFLhoI7BqBCjmwTicftqyFJMhxgFtnz6p7l4wqMLffrglK1W",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Première panière test"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "808Aq5quDlgFpV0XJp762AKUcBq2",
+      "txId": "cs_test_a1e8drWEwMGVr4teV9KkQD3DvdFtLv7zhgBvFnLMxz05EtZal4tf3xgC8M",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Pack 5 kg"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "JSQE5FwlgDQGpX1XTSGAczsWA8R2",
+      "txId": "cs_test_a1f9xRgsCvc6bTQWbdQTF8KdGU5a39OcU6kY0jpN6kpRNWaXp0zZrsFkMx",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Marmo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5VeArxpxHvMcvdu3IQLnYfJSpsV2",
+      "txId": "cs_test_a1glvr97giqEAm68OAqD32Y6s6C4JXgkJ5cD5B25HoldtgnFM6vIEQgJaA",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Marmo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "808Aq5quDlgFpV0XJp762AKUcBq2",
+      "txId": "cs_test_a1lnygppH5BvcWwXVgXYb3GUBkj5uGpK9BGF9vvksWWVfY344oOGsdnwIC",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "eHjGIjg2E3SIFoDQVfe1",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "eTU69rYtqAKPhTFvZ9It",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5tWJrOjmpbSxh1DIvw9bNtX89f33",
+      "txId": "eZC6LvvPdD21pbccLTA0",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "f3ABDZhYsUNfzVl4utIX",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "fbRui54cG0B6ex85ix10",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "fxc9imz9baOthEZn156p",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "g4cgQzYuJBzONyC6mkKV",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6jFxlAryFWYyxF68VFgMgJm5VC72",
+      "txId": "gVT5HiU5qiUwA3KTXhFh",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "gfiR9Hmk7DujowspXCy0",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "gt0EYs66Rso9oNdOwtaW",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "hWjH3rsfKbfQofIr7mus",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "HOGngXQhdOg9RM2QcW4Ivl7F7h62",
+      "txId": "hktKsCw2lLJULd9jNeiZ",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "huTZ6KtlJE94YiEyI1XK",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "ih86rRNsVEnL1luo9BzG",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "stripe_renewal_missing_credits",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "inv_in_1TcMEMGCDVPnzYlbHlgiYGOs",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=renouvellement, montant=199)."
+    },
+    {
+      "kind": "stripe_renewal_missing_credits",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "inv_in_1TcUdBGCDVPnzYlbusrp68Kl",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=renouvellement, montant=19)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "jZl4LFKd4gF5muyR6PCO",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "jc6Wpod5q34TAj7yU8RJ",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "jxf2MoYhUG0yLEIFp4vF",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "RhxIrQ2ZsAWjZJzC5AqDTGeBbnN2",
+      "txId": "kWG3mlLT8x4Q1Zb0HkBj",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "lpAmmHDhWCyxwIiCl45M",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "m8ftljURHPTBkq1SLz2z",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "mBlTPayN6RC8FByDh3rK",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "mLLqFbh2wDFlAaHap1hV",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5tWJrOjmpbSxh1DIvw9bNtX89f33",
+      "txId": "mckJRgBuL9Oq7sIJ25Tr",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "mkXJMVG9PVQIuJRIPQVm",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=19)."
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "nTXxiKSSGdMFoT34beyi",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=39)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "UkbBAOO9mQbCbX797HZbk67fhDq1",
+      "txId": "pWC8HETad7zjMmGKrGWs",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "M6nJf5KEtIc3xGSq9aBBYnKYV8M2",
+      "email": "cedric.lodovicci@outlook.fr",
+      "txId": "pWsOGwBEcZ8nNZLjhvTr",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "pnWakuDYRC7l8v2AAz44",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=—)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "cN6ilq8nccaDS7PO2iUXEAF1iCw2",
+      "txId": "qMJXf4DvFYR5dXfE6s3p",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "qYnQJqjVeIJiqhfnIVtV",
+      "planId": "Solo",
+      "expected": {
+        "reservations": 2,
+        "kg": 5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "pssloeTilzR0sM9lkq1mYTNYAsg2",
+      "txId": "suBCKhWLCu4r48EJT7Tg",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "suy5o08q6IdACXc5sa3t",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=199)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "YB62EQBTU8RmKDTpVB3HtNzA3wj2",
+      "email": "mickael.tounsi@gmail.com",
+      "txId": "sync_sub_1TXJLnRQKZaBTR6873ysySSm",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=abonnement, montant=19)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "7MmYAqenbROs8ovJ96dzFdLgtKC3",
+      "txId": "t13qVrcoF8Sr2zqhbaSq",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Solo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "tG5p9cmbeNKv16AAMjxy",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6jFxlAryFWYyxF68VFgMgJm5VC72",
+      "txId": "tPVfD96V8JTtTboHNYgv",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6jFxlAryFWYyxF68VFgMgJm5VC72",
+      "txId": "ukj4sZxFtSQge9bWw7YP",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "utld9OtD2z7IS8yGwtQ2",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=19)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "w3bXr9FbCZLbsOX0qnHT",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "wMTxdqEyPrughlzW9QRT",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "wbdpnZDrrRpvVXAXzgpo",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "wl9fCxFm8u7BfuwG00kP",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "HOGngXQhdOg9RM2QcW4Ivl7F7h62",
+      "txId": "x5wLNQgTY4LEwFqBINTr",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "xXY0Z9025Fg1wpiK6ccm",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=—)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6jFxlAryFWYyxF68VFgMgJm5VC72",
+      "txId": "xayCuwUU4iYk7bru1Py4",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": ""
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "6jFxlAryFWYyxF68VFgMgJm5VC72",
+      "txId": "xrLoVTBjasFYn8xYRAcZ",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "xzx7YR8l2qJYicn2wdPM",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "MmQXISElb8ejlJHxZXR05cjNHJo2",
+      "email": "horace@azur-clim-service.com",
+      "txId": "yUp7C5dZZunpMdJtLC7W",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "nkDi1IqiLIPJ96itOUYzJDG9mxp2",
+      "txId": "yVs4rFzZHV7IKNEsVNdt",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Duo"
+    },
+    {
+      "kind": "credits_not_applied",
+      "uid": "Ch22yXC8khh5QV5oTng00xUZLmD2",
+      "email": "info@universal-hygiene.com",
+      "txId": "yWwGIDaNd5iyoLYfJS4j",
+      "planId": "Super Héros",
+      "expected": {
+        "reservations": 4,
+        "kg": 40
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Renouvellement, montant=199)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "AfwMb9c5NERC1ADemxYBbQ2vMzT2",
+      "txId": "yiDTxklz6M3IynASK48K",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "test"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "5tWJrOjmpbSxh1DIvw9bNtX89f33",
+      "txId": "ymt0XU2OK8WW7uYxbSS2",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "Mino"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "z1xGODFtnCisXySWBDpH",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=NaN)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "XNHjyNyEjcObJOLHYPl2lbwEJkt1",
+      "txId": "z5dF6zlS5xSHtl2jOY1h",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "4lS1oNVr1waVZ6LFaBQnNKnaJ633",
+      "txId": "zCULQIrzSMdMCnxHJl9Z",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "hAHckYdQKsRZXBerFIQbS9HWAFF3",
+      "txId": "zbTbY6i0B9HyLUocWJOF",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    },
+    {
+      "kind": "legacy_log_no_credits_flag",
+      "uid": "PYFHaRQzvWOfdmM25hT4s79RekJ3",
+      "email": "coralierollin@live.fr",
+      "txId": "zen9OA8uXy4uCi5kXw8z",
+      "planId": "Mino",
+      "expected": {
+        "reservations": 1,
+        "kg": 2.5
+      },
+      "detail": "Paiement enregistré mais creditsApplied ≠ true (type=Abonnement, montant=19)."
+    },
+    {
+      "kind": "paid_tx_missing_user",
+      "uid": "ppH9PwQLJXWUq6PjvSYSkUJnDot1",
+      "txId": "zzBtEi4cgG1aDV6xjND4",
+      "detail": "Transaction paiement sans utilisateur Firestore correspondant.",
+      "planId": "aucun"
+    }
+  ]
+}

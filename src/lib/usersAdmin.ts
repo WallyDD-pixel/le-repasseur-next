@@ -11,8 +11,18 @@ import {
   ABONNEMENTS_COLLECTION,
   isHiddenSystemAbonnement,
 } from "@/lib/abonnementsAdmin";
+import { userAddressFromFirestore } from "@/lib/userProfileFirestore";
 
 export const USERS_COLLECTION = "users";
+
+export type UserAddressParts = {
+  societe?: string;
+  numero?: string;
+  voie?: string;
+  complementAdresse?: string;
+  codePostal?: string;
+  ville?: string;
+};
 
 export type AdminUserRow = {
   id: string;
@@ -23,6 +33,10 @@ export type AdminUserRow = {
   email: string;
   telephone: string;
   codePostal: string;
+  /** Adresse principale (collecte). */
+  adresse1: string;
+  /** Adresse secondaire si renseignée. */
+  adresse2: string;
   kg: number | null;
   kgDisplay: string;
   reservations: number;
@@ -119,6 +133,56 @@ function coerceReservations(data: Record<string, unknown>): number {
   return 0;
 }
 
+function primaryAddressParts(data: Record<string, unknown>): UserAddressParts {
+  const a = userAddressFromFirestore(data);
+  return {
+    societe: a.societe,
+    numero: a.numero,
+    voie: a.voie,
+    complementAdresse: a.complementAdresse,
+    codePostal: a.codePostal,
+    ville: a.ville,
+  };
+}
+
+/** Une ligne lisible : société, rue, complément, CP ville. */
+export function formatUserAddressLine(parts: UserAddressParts): string {
+  const segments: string[] = [];
+  if (parts.societe) segments.push(parts.societe);
+  const street = `${parts.numero ?? ""} ${parts.voie ?? ""}`.trim();
+  if (street) segments.push(street);
+  if (parts.complementAdresse) segments.push(parts.complementAdresse);
+  const city = `${parts.codePostal ?? ""} ${parts.ville ?? ""}`.trim();
+  if (city) segments.push(city);
+  return segments.length > 0 ? segments.join(", ") : "—";
+}
+
+export function formatUserPrimaryAddress(data: Record<string, unknown>): string {
+  return formatUserAddressLine(primaryAddressParts(data));
+}
+
+export function formatUserSecondaryAddress(
+  data: Record<string, unknown>
+): string {
+  const a = userAddressFromFirestore(data);
+  if (a.adresseSecondaire !== "oui") return "—";
+  return formatUserAddressLine({
+    numero: a.numero2,
+    voie: a.voie2,
+    complementAdresse: a.complementAdresse2,
+    codePostal: a.codePostal2,
+    ville: a.ville2,
+  });
+}
+
+export function userHasSecondaryAddress(data: Record<string, unknown>): boolean {
+  return (
+    data.adresseSecondaire === true ||
+    data.adresseSecondaire === "oui" ||
+    formatUserSecondaryAddress(data) !== "—"
+  );
+}
+
 function formatNomAffiche(data: Record<string, unknown>): string {
   const nom = str(pickFirst(data, ["nom", "lastname", "lastName", "nomFamille"]));
   const prenom = str(
@@ -153,6 +217,8 @@ export function normalizeUserDoc(
     email,
     telephone: telephone || "—",
     codePostal: codePostal || "—",
+    adresse1: formatUserPrimaryAddress(data),
+    adresse2: formatUserSecondaryAddress(data),
     kg,
     kgDisplay,
     reservations: coerceReservations(data),

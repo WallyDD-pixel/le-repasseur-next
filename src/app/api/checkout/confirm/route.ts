@@ -3,16 +3,23 @@ import Stripe from "stripe";
 import * as admin from "firebase-admin";
 
 import { TRANSACTIONS_COLLECTION } from "@/lib/activiteAdmin";
-import {
-  findPlanOrProductData,
-  resolvePlanCredits,
-} from "@/lib/planCreditsResolve";
-import { planIdFromStripeMetadata } from "@/lib/stripeMetadataLegacy";
 import { isSubscriptionRecapPlan } from "@/lib/stripePlans";
-import { isTestOfferPlanId } from "@/lib/testPaniereOffer";
 import { getAdminFirestore, getFirebaseAdminApp } from "@/server/firebaseAdmin";
 import { verifyFirebaseUserIdToken } from "@/server/firebaseIdTokenVerify";
 import { resolveStripeSecret } from "@/server/stripeConfigResolve";
+import {
+  stripeCustomerIdFromCheckoutSession,
+  stripeSubscriptionIdFromCheckoutSession,
+} from "@/server/checkoutStripeCustomer";
+import {
+  applyStripeCreditsIdempotent,
+  planIdFromCheckoutSession,
+} from "@/server/stripeCreditsApply";
+import { persistUserStripeIds } from "@/server/persistUserStripeIds";
+import {
+  fetchStripeInvoiceUrls,
+  invoiceUrlFields,
+} from "@/server/stripeInvoiceUrls";
 
 function readString(body: unknown, key: string): string {
   if (typeof body !== "object" || body === null) return "";
@@ -74,7 +81,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
-  // Sécurité : la session doit correspondre à l'utilisateur (uid).
   if (session.client_reference_id && session.client_reference_id !== user.uid) {
     return NextResponse.json(
       { error: "Session Stripe ne correspond pas à votre compte." },
@@ -82,7 +88,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const planId = planIdFromStripeMetadata(session.metadata);
+  const planId = planIdFromCheckoutSession(session);
   const paid = session.payment_status === "paid";
   if (!paid) {
     return NextResponse.json(
@@ -99,8 +105,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const isSub = planId ? isSubscriptionRecapPlan(planId) : false;
+  if (!planId) {
+    return NextResponse.json(
+      { error: "planId manquant dans la session Stripe." },
+      { status: 400 }
+    );
+  }
 
+  const isSub = isSubscriptionRecapPlan(planId);
   const amountTotal =
     typeof session.amount_total === "number" ? session.amount_total : null;
   const amountEuros =
@@ -117,79 +129,54 @@ export async function POST(req: NextRequest) {
   const txPayload: Record<string, unknown> = {
     userId: user.uid,
     type: isSub ? "abonnement" : "paiement",
-    titre: planId ? `Formule ${planId}` : "Paiement",
+    titre: `Formule ${planId}`,
     stripeCheckoutSessionId: session.id,
     transactionDate: admin.firestore.FieldValue.serverTimestamp(),
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    source: "checkout_confirm",
+    role: planId,
   };
-  if (planId) txPayload.role = planId;
   if (amountEuros != null) txPayload.montant = amountEuros;
   if (session.currency) txPayload.currency = session.currency;
   if (stripeSubscriptionId) txPayload.stripeSubscriptionId = stripeSubscriptionId;
-  if (stripeInvoiceId) txPayload.stripeInvoiceId = stripeInvoiceId;
-
-  let creditsApplied: { reservations: number; kg: number } | null = null;
+  if (stripeInvoiceId) {
+    txPayload.stripeInvoiceId = stripeInvoiceId;
+    try {
+      const urls = await fetchStripeInvoiceUrls(stripe, stripeInvoiceId);
+      Object.assign(txPayload, invoiceUrlFields(urls));
+    } catch {
+      /* ignore */
+    }
+  }
 
   try {
-    const txRef = db.collection(TRANSACTIONS_COLLECTION).doc(session.id);
-    const txSnap = await txRef.get();
-    const firstConfirmation = !txSnap.exists;
-    const txExisting = txSnap.exists
-      ? (txSnap.data() as Record<string, unknown>)
-      : {};
-    const creditsAlreadyOnTx = txExisting.creditsApplied === true;
+    const result = await applyStripeCreditsIdempotent(db, {
+      uid: user.uid,
+      txDocId: session.id,
+      planId,
+      amountEuros,
+      txPayload,
+      setRole: isSub,
+    });
 
-    if (planId) {
-      const userRef = db.collection("users").doc(user.uid);
-      const updates: Record<string, unknown> = {
-        ...(isSub ? { role: planId } : {}),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
+    await persistUserStripeIds(db, user.uid, {
+      stripeCustomerId: stripeCustomerIdFromCheckoutSession(session),
+      stripeSubscriptionId:
+        stripeSubscriptionIdFromCheckoutSession(session) ?? stripeSubscriptionId,
+    });
 
-      // Métier : collectes/collecte du plan → users.reservations ; kg → users.collectes
-      const shouldApplyCredits = firstConfirmation || !creditsAlreadyOnTx;
-      if (shouldApplyCredits) {
-        const planData = await findPlanOrProductData(db, planId, amountEuros);
-        const { addReservations, addKg } = resolvePlanCredits(planId, planData);
-
-        if (addReservations != null) {
-          updates.reservations =
-            admin.firestore.FieldValue.increment(addReservations);
-        }
-        if (addKg != null) {
-          updates.collectes = admin.firestore.FieldValue.increment(addKg);
-        }
-        if (addReservations != null || addKg != null) {
-          creditsApplied = {
-            reservations: addReservations ?? 0,
-            kg: addKg ?? 0,
-          };
-          txPayload.creditsApplied = true;
-        }
-      }
-
-      if (planId && isTestOfferPlanId(planId)) {
-        updates.testOfferUsed = true;
-        updates.eligibleTestOffer = false;
-      }
-
-      await txRef.set(txPayload, { merge: true });
-      await userRef.set(updates, { merge: true });
-    } else {
-      await txRef.set(txPayload, { merge: true });
-    }
+    return NextResponse.json({
+      ok: true,
+      paid: true,
+      planId,
+      subscriptionActivated: Boolean(isSub && planId),
+      creditsApplied: result.credits,
+      idempotent: result.idempotent,
+    });
   } catch (e) {
     const msg =
       e instanceof Error ? e.message : "Écriture Firestore impossible.";
+    console.error("[checkout/confirm]", msg, e);
     return NextResponse.json({ error: msg }, { status: 502 });
   }
-
-  return NextResponse.json({
-    ok: true,
-    paid: true,
-    planId: planId || null,
-    subscriptionActivated: Boolean(isSub && planId),
-    creditsApplied,
-  });
 }
-

@@ -23,6 +23,8 @@ type SortKey =
   | "email"
   | "telephone"
   | "codePostal"
+  | "adresse1"
+  | "adresse2"
   | "kg"
   | "reservations";
 type SortDir = "asc" | "desc";
@@ -106,6 +108,10 @@ function compareUserRows(
       return a.telephone.localeCompare(b.telephone, "fr");
     case "codePostal":
       return a.codePostal.localeCompare(b.codePostal, "fr");
+    case "adresse1":
+      return a.adresse1.localeCompare(b.adresse1, "fr");
+    case "adresse2":
+      return a.adresse2.localeCompare(b.adresse2, "fr");
     case "kg": {
       const ka = a.kg ?? -Infinity;
       const kb = b.kg ?? -Infinity;
@@ -282,6 +288,8 @@ export default function AdminUtilisateursPage() {
       "EMAIL",
       "TÉLÉPHONE",
       "CODE POSTAL",
+      "ADRESSE 1",
+      "ADRESSE 2",
       "KG",
       "RÉSERVATIONS",
     ];
@@ -295,6 +303,8 @@ export default function AdminUtilisateursPage() {
           escapeCsvCell(r.email),
           escapeCsvCell(r.telephone),
           escapeCsvCell(r.codePostal),
+          escapeCsvCell(r.adresse1),
+          escapeCsvCell(r.adresse2),
           escapeCsvCell(r.kgDisplay),
           escapeCsvCell(String(r.reservations)),
         ].join(";")
@@ -424,7 +434,7 @@ export default function AdminUtilisateursPage() {
       ) : (
         <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-[1100px] w-full border-collapse text-left text-sm">
+            <table className="min-w-[1400px] w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/90">
                   {(
@@ -435,6 +445,8 @@ export default function AdminUtilisateursPage() {
                       ["email", "EMAIL", "min-w-[200px]"],
                       ["telephone", "TÉLÉPHONE", ""],
                       ["codePostal", "CODE POSTAL", ""],
+                      ["adresse1", "ADRESSE 1", "min-w-[200px]"],
+                      ["adresse2", "ADRESSE 2", "min-w-[200px]"],
                       ["kg", "KG", ""],
                       ["reservations", "RÉSERVATIONS", ""],
                     ] as const
@@ -496,6 +508,16 @@ export default function AdminUtilisateursPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
                         {r.codePostal}
+                      </td>
+                      <td className="max-w-[260px] px-4 py-3 text-slate-700">
+                        <span className="line-clamp-2" title={r.adresse1}>
+                          {r.adresse1}
+                        </span>
+                      </td>
+                      <td className="max-w-[260px] px-4 py-3 text-slate-700">
+                        <span className="line-clamp-2" title={r.adresse2}>
+                          {r.adresse2}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-800">
                         {r.kgDisplay}

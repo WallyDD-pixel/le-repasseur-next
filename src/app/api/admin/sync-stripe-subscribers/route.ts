@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   const dryRun = readBool(body, "dryRun", true);
-  const setQuotas = readBool(body, "setQuotas", true);
+  const setQuotas = readBool(body, "setQuotas", false);
 
   const secret = await resolveStripeSecret();
   if (!secret) {

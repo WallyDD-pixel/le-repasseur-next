@@ -9,7 +9,9 @@
     "start:next": "next start",
     "lint": "next lint",
     "sync:stripe": "npx tsx scripts/sync-stripe-subscribers.ts",
-    "check:stripe": "node scripts/check-stripe-account.mjs"
+    "check:stripe": "node scripts/check-stripe-account.mjs",
+    "seed:test-tx": "node scripts/seed-test-transaction.mjs",
+    "audit:credits": "npx tsx scripts/audit-credits-increment.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
@@ -20,6 +22,7 @@
     "firebase": "^12.12.0",
     "firebase-admin": "^13.9.0",
     "next": "^16.2.3",
+    "pdf-lib": "^1.17.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "server-only": "^0.0.1",

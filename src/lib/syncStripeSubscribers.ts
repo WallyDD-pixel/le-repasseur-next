@@ -13,7 +13,7 @@ import { isSubscriptionRecapPlan } from "@/lib/stripePlans";
 export type SyncStripeSubscribersOptions = {
   /** Si false, aucune écriture Firestore (aperçu uniquement). */
   dryRun: boolean;
-  /** Si true, fixe `reservations` et `collectes` (kg) aux quotas du plan. */
+  /** Si true, fixe `reservations` et `collectes` (kg) aux quotas du plan (défaut : false). */
   setQuotas: boolean;
   /** Statuts Stripe à parcourir (défaut : `active` uniquement). */
   statuses?: Stripe.SubscriptionListParams["status"][];

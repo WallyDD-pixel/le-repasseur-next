@@ -20,6 +20,10 @@ import {
   USERS_COLLECTION,
   userDocLacksSignupTimestamps,
 } from "@/lib/usersAdmin";
+import {
+  buildUserProfileUpdate,
+  userAddressFromFirestore,
+} from "@/lib/userProfileFirestore";
 import { getFirebaseFirestore } from "@/lib/firebase";
 import { firebaseMessage } from "@/lib/firebaseError";
 
@@ -38,7 +42,18 @@ export default function ModifierUtilisateurPage() {
   const [nom, setNom] = useState("");
   const [role, setRole] = useState("aucun");
   const [telephone, setTelephone] = useState("");
+  const [societe, setSociete] = useState("");
+  const [numero, setNumero] = useState("");
+  const [voie, setVoie] = useState("");
+  const [complementAdresse, setComplementAdresse] = useState("");
   const [codePostal, setCodePostal] = useState("");
+  const [ville, setVille] = useState("");
+  const [adresseSecondaire, setAdresseSecondaire] = useState(false);
+  const [numero2, setNumero2] = useState("");
+  const [voie2, setVoie2] = useState("");
+  const [complementAdresse2, setComplementAdresse2] = useState("");
+  const [codePostal2, setCodePostal2] = useState("");
+  const [ville2, setVille2] = useState("");
   const [kg, setKg] = useState("");
   const [reservations, setReservations] = useState("");
   const [roleOptions, setRoleOptions] = useState<string[]>([
@@ -90,13 +105,21 @@ export default function ModifierUtilisateurPage() {
             ? data.tel
             : ""
       );
-      setCodePostal(
-        typeof data.codePostal === "string"
-          ? data.codePostal
-          : typeof data.cp === "string"
-            ? data.cp
-            : ""
-      );
+
+      const addr = userAddressFromFirestore(data);
+      setSociete(addr.societe);
+      setNumero(addr.numero);
+      setVoie(addr.voie);
+      setComplementAdresse(addr.complementAdresse);
+      setCodePostal(addr.codePostal);
+      setVille(addr.ville);
+      setAdresseSecondaire(addr.adresseSecondaire === "oui");
+      setNumero2(addr.numero2);
+      setVoie2(addr.voie2);
+      setComplementAdresse2(addr.complementAdresse2);
+      setCodePostal2(addr.codePostal2);
+      setVille2(addr.ville2);
+
       // Métier Firestore : `collectes` = quota kg, `reservations` = collectes restantes
       const k = data.collectes ?? data.kg ?? data.poidsKg;
       setKg(typeof k === "number" ? String(k) : typeof k === "string" ? k : "");
@@ -129,12 +152,25 @@ export default function ModifierUtilisateurPage() {
       const db = getFirebaseFirestore();
       const kgNum = kg.trim() === "" ? null : Number.parseFloat(kg.replace(",", "."));
       const resNum = Number.parseInt(reservations, 10);
-      await updateDoc(doc(db, USERS_COLLECTION, userId), {
-        prenom: prenom.trim(),
-        nom: nom.trim(),
+      const payload: Record<string, unknown> = {
+        ...buildUserProfileUpdate({
+          prenom,
+          nom,
+          telephone,
+          societe,
+          numero,
+          voie,
+          complementAdresse,
+          codePostal,
+          ville,
+          adresseSecondaire: adresseSecondaire ? "oui" : "non",
+          numero2,
+          voie2,
+          complementAdresse2,
+          codePostal2,
+          ville2,
+        }),
         role: role.trim() || "aucun",
-        telephone: telephone.trim(),
-        codePostal: codePostal.trim(),
         ...(kgNum != null && !Number.isNaN(kgNum)
           ? { collectes: kgNum }
           : { collectes: 0 }),
@@ -148,7 +184,9 @@ export default function ModifierUtilisateurPage() {
             }
           : {}),
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      await updateDoc(doc(db, USERS_COLLECTION, userId), payload);
       router.push("/admin/utilisateurs");
     } catch (err) {
       setError(`Enregistrement impossible — ${firebaseMessage(err)}`);
@@ -172,7 +210,7 @@ export default function ModifierUtilisateurPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="mx-auto max-w-2xl">
       <div className="mb-8">
         <Link
           href="/admin/utilisateurs"
@@ -252,26 +290,149 @@ export default function ModifierUtilisateurPage() {
             ))}
           </select>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="user-tel">Téléphone</Label>
-            <Input
-              id="user-tel"
-              value={telephone}
-              onChange={(e) => setTelephone(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="user-cp">Code postal</Label>
-            <Input
-              id="user-cp"
-              value={codePostal}
-              onChange={(e) => setCodePostal(e.target.value)}
-              className="mt-1"
-            />
-          </div>
+        <div>
+          <Label htmlFor="user-tel">Téléphone</Label>
+          <Input
+            id="user-tel"
+            value={telephone}
+            onChange={(e) => setTelephone(e.target.value)}
+            className="mt-1"
+          />
         </div>
+
+        <fieldset className="space-y-4 rounded-xl border border-slate-200/90 bg-slate-50/50 p-4">
+          <legend className="px-1 text-sm font-bold text-[#10294B]">
+            Adresse 1 (principale)
+          </legend>
+          <div>
+            <Label htmlFor="user-societe">Société (optionnel)</Label>
+            <Input
+              id="user-societe"
+              value={societe}
+              onChange={(e) => setSociete(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <Label htmlFor="user-numero">N°</Label>
+              <Input
+                id="user-numero"
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="user-voie">Voie</Label>
+              <Input
+                id="user-voie"
+                value={voie}
+                onChange={(e) => setVoie(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="user-complement">Complément d&apos;adresse</Label>
+            <Input
+              id="user-complement"
+              value={complementAdresse}
+              onChange={(e) => setComplementAdresse(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="user-cp">Code postal</Label>
+              <Input
+                id="user-cp"
+                value={codePostal}
+                onChange={(e) => setCodePostal(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="user-ville">Ville</Label>
+              <Input
+                id="user-ville"
+                value={ville}
+                onChange={(e) => setVille(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset className="space-y-4 rounded-xl border border-slate-200/90 bg-slate-50/50 p-4">
+          <legend className="px-1 text-sm font-bold text-[#10294B]">
+            Adresse 2 (secondaire)
+          </legend>
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#10294B]">
+            <input
+              type="checkbox"
+              checked={adresseSecondaire}
+              onChange={(e) => setAdresseSecondaire(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-[#CE2029] focus:ring-[#CE2029]/40"
+            />
+            Adresse secondaire renseignée
+          </label>
+          {adresseSecondaire ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="user-numero2">N°</Label>
+                  <Input
+                    id="user-numero2"
+                    value={numero2}
+                    onChange={(e) => setNumero2(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="user-voie2">Voie</Label>
+                  <Input
+                    id="user-voie2"
+                    value={voie2}
+                    onChange={(e) => setVoie2(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="user-complement2">Complément d&apos;adresse</Label>
+                <Input
+                  id="user-complement2"
+                  value={complementAdresse2}
+                  onChange={(e) => setComplementAdresse2(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="user-cp2">Code postal</Label>
+                  <Input
+                    id="user-cp2"
+                    value={codePostal2}
+                    onChange={(e) => setCodePostal2(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="user-ville2">Ville</Label>
+                  <Input
+                    id="user-ville2"
+                    value={ville2}
+                    onChange={(e) => setVille2(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-slate-500">Aucune adresse secondaire.</p>
+          )}
+        </fieldset>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="user-kg">Kg</Label>

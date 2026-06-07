@@ -36,11 +36,13 @@ function subscriptionPriceId(sub: Stripe.Subscription): string {
 export async function resolveStripeSubscriptionContext(
   stripe: Stripe,
   sub: Stripe.Subscription,
-  invoice?: Stripe.Invoice | null
+  invoice?: Stripe.Invoice | null,
+  extraMetaSources: Array<Record<string, unknown> | null | undefined> = []
 ): Promise<ResolvedStripeSubscriptionContext> {
   const metaSources: Array<Record<string, unknown> | null | undefined> = [
     sub.metadata,
     invoice?.metadata,
+    ...extraMetaSources,
   ];
 
   let planId = planIdFromStripeMetadata(...metaSources);

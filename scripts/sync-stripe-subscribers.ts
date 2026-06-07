@@ -1,11 +1,12 @@
 /**
  * Aligne Firestore sur les abonnements Stripe actifs.
  *
- * Prérequis : .env.local avec FIREBASE_SERVICE_ACCOUNT_JSON et STRIPE_SECRET_KEY
+ * Prérequis : .env.local avec FIREBASE_SERVICE_ACCOUNT_JSON
+ * Clé Stripe : siteSettings/stripe (Firestore) en priorité, sinon STRIPE_SECRET_KEY
  *
- *   npm run sync:stripe              # aperçu (dry-run)
- *   npm run sync:stripe -- --apply     # écriture Firestore
- *   npm run sync:stripe -- --apply --no-set-quotas   # rôle + transaction seulement
+ *   npm run sync:stripe              # aperçu (dry-run), quotas inchangés
+ *   npm run sync:stripe -- --apply     # rôle + lien Stripe (sans toucher aux quotas)
+ *   npm run sync:stripe -- --apply --set-quotas   # réinitialise aussi reservations/collectes au plan
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -51,6 +52,26 @@ function initFirebase(): admin.firestore.Firestore {
   return admin.firestore();
 }
 
+async function resolveStripeSecretForScript(
+  db: admin.firestore.Firestore
+): Promise<{ key: string; source: "firestore" | "env" } | null> {
+  try {
+    const snap = await db.collection("siteSettings").doc("stripe").get();
+    const sk = snap.data()?.secretKey;
+    if (typeof sk === "string" && sk.trim()) {
+      return { key: sk.trim(), source: "firestore" };
+    }
+  } catch (e) {
+    console.warn(
+      "Lecture siteSettings/stripe impossible :",
+      e instanceof Error ? e.message : e
+    );
+  }
+  const envKey = process.env.STRIPE_SECRET_KEY?.trim();
+  if (envKey) return { key: envKey, source: "env" };
+  return null;
+}
+
 function printRow(
   r: Awaited<ReturnType<typeof syncStripeSubscribers>>["rows"][number]
 ): void {
@@ -76,16 +97,21 @@ async function main(): Promise<void> {
 
   const args = process.argv.slice(2);
   const apply = args.includes("--apply");
-  const setQuotas = !args.includes("--no-set-quotas");
+  const setQuotas = args.includes("--set-quotas");
 
-  const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!stripeKey) {
-    console.error("STRIPE_SECRET_KEY manquant.");
+  const db = initFirebase();
+  const resolved = await resolveStripeSecretForScript(db);
+  if (!resolved) {
+    console.error(
+      "Clé Stripe introuvable : renseignez siteSettings/stripe (Firestore) ou STRIPE_SECRET_KEY."
+    );
     process.exit(1);
   }
 
-  const db = initFirebase();
-  const stripe = new Stripe(stripeKey);
+  const stripe = new Stripe(resolved.key);
+  console.log(
+    `Clé Stripe : ${resolved.source} (${resolved.key.slice(0, 16)}…)\n`
+  );
 
   console.log(
     apply
