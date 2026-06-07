@@ -24,7 +24,7 @@ export const COVERED_COMMUNES: CoveredCommune[] = [
   { postalCodes: ["06590"], city: "Théoule-sur-Mer" },
   // Var (83)
   { postalCodes: ["83600"], city: "Fréjus" },
-  { postalCodes: ["83700"], city: "Saint-Raphaël" },
+  { postalCodes: ["83700", "83530"], city: "Saint-Raphaël" },
   { postalCodes: ["83370"], city: "Saint-Aygulf" },
   { postalCodes: ["83520"], city: "Roquebrune-sur-Argens" },
   { postalCodes: ["83480", "83099"], city: "Puget-sur-Argens" },
@@ -42,6 +42,14 @@ export function normalizePostalCode(raw: string): string {
 
 export function isPostalCodeCovered(raw: string): boolean {
   return postalCodeCoverageStatus(raw) === "covered";
+}
+
+/** Commune desservie pour un code postal couvert (sinon `null`). */
+export function cityForPostalCode(raw: string): string | null {
+  const cp = normalizePostalCode(raw);
+  if (!/^\d{5}$/.test(cp)) return null;
+  const commune = COVERED_COMMUNES.find((c) => c.postalCodes.includes(cp));
+  return commune?.city ?? null;
 }
 
 /** Vérification basée uniquement sur les 5 chiffres du code postal. */

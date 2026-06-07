@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 import {
+  cityForPostalCode,
   isPostalCodeCovered,
   normalizePostalCode,
   postalCodeCoverageStatus,
@@ -60,7 +61,15 @@ export default function InscriptionPage() {
     complementAdresse: (v: string) => setValues((s) => ({ ...s, complementAdresse: v })),
     password: (v: string) => setValues((s) => ({ ...s, password: v })),
     passwordConfirm: (v: string) => setValues((s) => ({ ...s, passwordConfirm: v })),
-    codePostal: (v: string) => setValues((s) => ({ ...s, codePostal: v })),
+    codePostal: (v: string) =>
+      setValues((s) => {
+        const city = cityForPostalCode(v);
+        return {
+          ...s,
+          codePostal: v,
+          ...(city && !s.ville.trim() ? { ville: city } : {}),
+        };
+      }),
     ville: (v: string) => setValues((s) => ({ ...s, ville: v })),
     adresseSecondaire: (v: "non" | "oui") =>
       setValues((s) => ({ ...s, adresseSecondaire: v })),
