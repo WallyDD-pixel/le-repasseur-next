@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import * as admin from "firebase-admin";
 
 import { TRANSACTIONS_COLLECTION } from "@/lib/activiteAdmin";
+import { resolveStripeSubscriptionContext } from "@/lib/stripeSubscriptionResolve";
 import { getAdminFirestore } from "@/server/firebaseAdmin";
 import { resolveStripeSecret } from "@/server/stripeConfigResolve";
 import {
@@ -18,8 +19,10 @@ import {
   applyStripeCreditsIdempotent,
   planIdFromCheckoutSession,
   resolveInvoiceRenewalContext,
+  subscriptionIdFromInvoice,
 } from "@/server/stripeCreditsApply";
 import { persistUserStripeIds } from "@/server/persistUserStripeIds";
+import { syncSubscriptionPriceBeforeRenewal } from "@/server/stripeSubscriptionPromoPrice";
 import { isSubscriptionRecapPlan } from "@/lib/stripePlans";
 
 export const runtime = "nodejs";
@@ -142,6 +145,51 @@ async function handleCheckoutSessionCompleted(
     uid,
     ...result,
   });
+}
+
+async function handleInvoiceUpcoming(
+  stripe: Stripe,
+  db: admin.firestore.Firestore,
+  invoice: Stripe.Invoice
+) {
+  const subId = subscriptionIdFromInvoice(invoice);
+  if (!subId) {
+    return NextResponse.json({ ok: true, ignored: "no_subscription" });
+  }
+
+  let sub: Stripe.Subscription;
+  try {
+    sub = await stripe.subscriptions.retrieve(subId, {
+      expand: ["items.data.price.product"],
+    });
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "Impossible de récupérer l’abonnement.";
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
+
+  const { firebaseUid, customerEmail } = await resolveStripeSubscriptionContext(
+    stripe,
+    sub,
+    invoice
+  );
+
+  let uid = firebaseUid;
+  if (!uid && customerEmail) {
+    uid = (await uidFromEmail(db, customerEmail)) || "";
+  }
+  if (!uid) {
+    return NextResponse.json({ ok: true, ignored: "user_not_found" });
+  }
+
+  const sync = await syncSubscriptionPriceBeforeRenewal({
+    stripe,
+    db,
+    subscription: sub,
+    uid,
+  });
+
+  return NextResponse.json({ ok: true, priceSync: sync });
 }
 
 async function handleInvoicePaidRenewal(
@@ -296,6 +344,14 @@ export async function POST(req: NextRequest) {
       db,
       stripe,
       event.data.object as Stripe.Checkout.Session
+    );
+  }
+
+  if (event.type === "invoice.upcoming") {
+    return handleInvoiceUpcoming(
+      stripe,
+      db,
+      event.data.object as Stripe.Invoice
     );
   }
 

@@ -21,10 +21,15 @@ import {
 function PlanRecapCard({
   entry,
   imageUrl,
+  priceLine,
+  promoHint,
 }: {
   entry: ClientCatalogEntry;
   imageUrl?: string;
+  priceLine?: string;
+  promoHint?: string | null;
 }) {
+  const displayPrice = priceLine ?? entry.priceLine;
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
       <div className="grid gap-6 p-6 sm:grid-cols-[minmax(0,200px)_1fr] sm:gap-8 sm:p-8">
@@ -52,7 +57,12 @@ function PlanRecapCard({
             {entry.name}
           </h2>
           <p className="mt-3 text-2xl font-bold tracking-tight text-[#10294B]">
-            {entry.priceLine}
+            {displayPrice}
+            {promoHint ? (
+              <span className="mt-1 block text-sm font-medium text-[#CE2029]">
+                {promoHint}
+              </span>
+            ) : null}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
             {entry.detailLine}
@@ -137,10 +147,59 @@ function RecapContent() {
   const [images, setImages] = useState<HomeFirestoreImages>({});
   const [payPending, setPayPending] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [priceLine, setPriceLine] = useState<string | undefined>();
+  const [promoHint, setPromoHint] = useState<string | null>(null);
 
   useEffect(() => {
     loadHomeFirestoreImages().then(setImages);
   }, []);
+
+  useEffect(() => {
+    const plan = planRaw?.trim();
+    if (!plan) return;
+    let cancelled = false;
+    const run = async () => {
+      const u = getFirebaseAuth().currentUser;
+      let idToken = "";
+      if (u) {
+        try {
+          idToken = await u.getIdToken();
+        } catch {
+          /* prix catalogue par défaut */
+        }
+      }
+      const q = new URLSearchParams({ planId: plan });
+      if (idToken) q.set("idToken", idToken);
+      try {
+        const res = await fetch(`/api/checkout/preview?${q.toString()}`);
+        const data = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          priceLine?: string;
+          basePriceLine?: string;
+          hasPromo?: boolean;
+          promoPercent?: number;
+        };
+        if (cancelled || !data.ok || !data.priceLine) return;
+        setPriceLine(data.priceLine);
+        if (data.hasPromo && data.basePriceLine && data.promoPercent) {
+          setPromoHint(
+            `Tarif personnel : −${data.promoPercent}% (catalogue ${data.basePriceLine})`
+          );
+        } else {
+          setPromoHint(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setPriceLine(undefined);
+          setPromoHint(null);
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [planRaw]);
 
   const entry = planRaw
     ? getCatalogEntryByRecapPlanId(planRaw)
@@ -234,7 +293,12 @@ function RecapContent() {
           </p>
         ) : null}
 
-        <PlanRecapCard entry={entry} imageUrl={images[entry.imageKey]} />
+        <PlanRecapCard
+          entry={entry}
+          imageUrl={images[entry.imageKey]}
+          priceLine={priceLine}
+          promoHint={promoHint}
+        />
 
         <NextSteps entry={entry} />
 

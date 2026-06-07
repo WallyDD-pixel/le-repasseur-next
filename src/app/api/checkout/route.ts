@@ -7,8 +7,8 @@ import {
   stripePriceEnvVarNameForPlan,
 } from "@/lib/stripePlans";
 import { getAdminFirestore, getFirebaseAdminApp } from "@/server/firebaseAdmin";
-import { resolveCheckoutEuroCents } from "@/server/checkoutEuroCentsResolve";
 import { verifyFirebaseUserIdToken } from "@/server/firebaseIdTokenVerify";
+import { resolveCheckoutPricing } from "@/server/checkoutPricingResolve";
 import {
   ensureStripeCustomerLinked,
   resolveStripeCustomerIdForCheckout,
@@ -113,11 +113,14 @@ export async function POST(req: NextRequest) {
   }
 
   const secret = await resolveStripeSecret();
-  const priceId = await resolveStripePriceId(planId);
-  const euroCents =
-    typeof priceId === "string" && priceId.trim()
-      ? undefined
-      : await resolveCheckoutEuroCents(planId);
+  const pricing = await resolveCheckoutPricing({
+    planId,
+    uid: firebaseUser?.uid,
+  });
+  const euroCents = pricing.finalEuroCents;
+  const priceId = pricing.forceDynamicPrice
+    ? undefined
+    : await resolveStripePriceId(planId);
 
   const hasStripePrice = Boolean(priceId?.trim());
   const hasDynamicAmount =
@@ -193,6 +196,9 @@ export async function POST(req: NextRequest) {
       };
 
   const extraMeta: Record<string, string> = { planId };
+  if (pricing.promoPercent > 0) {
+    extraMeta.promoPercentApplied = String(pricing.promoPercent);
+  }
   if (firebaseUser?.uid) extraMeta.firebaseUid = firebaseUser.uid;
   if (checkoutCustomerEmail) extraMeta.userEmail = checkoutCustomerEmail;
   if (firebaseUser?.name) extraMeta.userName = firebaseUser.name;

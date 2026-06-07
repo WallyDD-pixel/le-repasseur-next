@@ -20,6 +20,7 @@ import {
   fetchStripeInvoiceUrls,
   invoiceUrlFields,
 } from "@/server/stripeInvoiceUrls";
+import { syncSubscriptionPriceBeforeRenewal } from "@/server/stripeSubscriptionPromoPrice";
 
 function readString(body: unknown, key: string): string {
   if (typeof body !== "object" || body === null) return "";
@@ -164,6 +165,22 @@ export async function POST(req: NextRequest) {
       stripeSubscriptionId:
         stripeSubscriptionIdFromCheckoutSession(session) ?? stripeSubscriptionId,
     });
+
+    if (isSub && stripeSubscriptionId) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId, {
+          expand: ["items.data.price.product"],
+        });
+        await syncSubscriptionPriceBeforeRenewal({
+          stripe,
+          db,
+          subscription: sub,
+          uid: user.uid,
+        });
+      } catch (e) {
+        console.error("[checkout/confirm] Alignement prix abonnement :", e);
+      }
+    }
 
     return NextResponse.json({
       ok: true,
