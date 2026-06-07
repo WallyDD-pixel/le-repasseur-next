@@ -26,8 +26,8 @@ export function getCompanyInvoiceInfo(): CompanyInvoiceInfo {
   return {
     legalName: env("COMPANY_LEGAL_NAME", "Umbrella Services"),
     tradeName: env("COMPANY_TRADE_NAME", "Le Repasseur"),
-    addressLine1: env("COMPANY_ADDRESS_LINE1", "Antibes, Alpes-Maritimes"),
-    addressLine2: env("COMPANY_ADDRESS_LINE2", "France"),
+    addressLine1: env("COMPANY_ADDRESS_LINE1", "15 Avenue Thiers"),
+    addressLine2: env("COMPANY_ADDRESS_LINE2", "06600 Antibes"),
     siret: env("COMPANY_SIRET", ""),
     tvaIntra: env("COMPANY_TVA_INTRA", ""),
     email: env("COMPANY_EMAIL", "contact@le-repasseur.fr"),

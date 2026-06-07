@@ -1,11 +1,22 @@
-import { PDFDocument, StandardFonts, rgb, type PDFPage } from "pdf-lib";
+import fs from "node:fs";
+import path from "node:path";
+
+import { PDFDocument, StandardFonts, rgb, type PDFImage, type PDFPage } from "pdf-lib";
 
 import type { CompanyInvoiceInfo } from "@/lib/companyInvoiceConfig";
 
 const NAVY = rgb(16 / 255, 41 / 255, 75 / 255);
 const RED = rgb(206 / 255, 32 / 255, 41 / 255);
 const SLATE = rgb(0.35, 0.38, 0.42);
-const LIGHT = rgb(0.94, 0.95, 0.96);
+const LIGHT = rgb(0.956, 0.965, 0.973);
+const WHITE = rgb(1, 1, 1);
+
+const LOGO_RELATIVE_PATH = path.join(
+  "public",
+  "assets",
+  "imgg",
+  "LOGO-LeRepasseur-Fond-Fonce.png"
+);
 
 export type SiteInvoiceLine = {
   label: string;
@@ -70,6 +81,92 @@ function drawLine(
   page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, color, thickness });
 }
 
+async function embedBrandLogo(pdf: PDFDocument): Promise<PDFImage | null> {
+  const logoPath = path.join(process.cwd(), LOGO_RELATIVE_PATH);
+  try {
+    const bytes = fs.readFileSync(logoPath);
+    return await pdf.embedPng(bytes);
+  } catch {
+    console.warn("[generateInvoicePdf] Logo introuvable :", logoPath);
+    return null;
+  }
+}
+
+function drawHeader(
+  page: PDFPage,
+  data: SiteInvoiceData,
+  margin: number,
+  width: number,
+  yTop: number,
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+  fontBold: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+  logo: PDFImage | null
+): number {
+  const contentWidth = width - margin * 2;
+  const headerHeight = 72;
+
+  page.drawRectangle({
+    x: margin,
+    y: yTop - headerHeight,
+    width: contentWidth,
+    height: headerHeight,
+    color: NAVY,
+  });
+  page.drawRectangle({
+    x: margin,
+    y: yTop - headerHeight,
+    width: contentWidth,
+    height: 3,
+    color: RED,
+  });
+
+  const headerCenterY = yTop - headerHeight / 2 - 4;
+
+  if (logo) {
+    const logoH = 52;
+    const logoW = (logo.width / logo.height) * logoH;
+    page.drawImage(logo, {
+      x: margin + 14,
+      y: headerCenterY - logoH / 2,
+      width: logoW,
+      height: logoH,
+    });
+  } else {
+    page.drawText(data.company.tradeName, {
+      x: margin + 16,
+      y: headerCenterY - 4,
+      size: 20,
+      font: fontBold,
+      color: WHITE,
+    });
+  }
+
+  const factureBlockX = width - margin - 128;
+  page.drawText("FACTURE", {
+    x: factureBlockX,
+    y: headerCenterY + 10,
+    size: 20,
+    font: fontBold,
+    color: WHITE,
+  });
+  page.drawText(data.invoiceNumber, {
+    x: factureBlockX,
+    y: headerCenterY - 8,
+    size: 10,
+    font,
+    color: rgb(0.88, 0.91, 0.95),
+  });
+  page.drawText(data.company.website, {
+    x: factureBlockX,
+    y: headerCenterY - 22,
+    size: 8,
+    font,
+    color: rgb(0.75, 0.8, 0.88),
+  });
+
+  return yTop - headerHeight - 20;
+}
+
 export async function generateSiteInvoicePdf(
   data: SiteInvoiceData
 ): Promise<Uint8Array> {
@@ -81,47 +178,12 @@ export async function generateSiteInvoicePdf(
 
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const logo = await embedBrandLogo(pdf);
 
   let y = height - margin;
+  y = drawHeader(page, data, margin, width, y, font, fontBold, logo);
 
-  page.drawRectangle({
-    x: margin,
-    y: y - 56,
-    width: contentWidth,
-    height: 56,
-    color: NAVY,
-  });
-  page.drawText(data.company.tradeName, {
-    x: margin + 16,
-    y: y - 36,
-    size: 22,
-    font: fontBold,
-    color: rgb(1, 1, 1),
-  });
-  page.drawText(data.company.website, {
-    x: margin + 16,
-    y: y - 52,
-    size: 9,
-    font,
-    color: rgb(0.85, 0.88, 0.92),
-  });
-  page.drawText("FACTURE", {
-    x: width - margin - 110,
-    y: y - 30,
-    size: 18,
-    font: fontBold,
-    color: rgb(1, 1, 1),
-  });
-  page.drawText(data.invoiceNumber, {
-    x: width - margin - 110,
-    y: y - 48,
-    size: 10,
-    font,
-    color: rgb(0.9, 0.92, 0.95),
-  });
-
-  y -= 80;
-
+  const emitterStartY = y;
   page.drawText("Émetteur", { x: margin, y, size: 9, font: fontBold, color: RED });
   y -= 14;
   const emitter = [
@@ -132,7 +194,6 @@ export async function generateSiteInvoicePdf(
     data.company.addressLine1,
     data.company.addressLine2,
     data.company.siret ? `SIRET : ${data.company.siret}` : "",
-    data.company.tvaIntra ? `TVA : ${data.company.tvaIntra}` : "",
     data.company.email,
     data.company.phone,
   ].filter(Boolean);
@@ -141,8 +202,17 @@ export async function generateSiteInvoicePdf(
     y -= 12;
   }
 
-  let clientY = height - margin - 80;
+  let clientY = emitterStartY;
   const clientX = width / 2 + 12;
+  page.drawRectangle({
+    x: clientX - 12,
+    y: clientY - 108,
+    width: width - margin - clientX + 12,
+    height: 108,
+    color: LIGHT,
+    borderColor: rgb(0.88, 0.9, 0.93),
+    borderWidth: 1,
+  });
   page.drawText("Client", {
     x: clientX,
     y: clientY,
@@ -174,54 +244,72 @@ export async function generateSiteInvoicePdf(
     clientY -= 12;
   }
 
-  y = Math.min(y, clientY) - 24;
+  y = Math.min(y, clientY - 16) - 8;
 
-  page.drawText(`Date : ${formatDateFr(data.invoiceDate)}`, {
+  page.drawRectangle({
     x: margin,
-    y,
+    y: y - 20,
+    width: contentWidth,
+    height: 20,
+    color: rgb(0.99, 0.99, 1),
+    borderColor: rgb(0.9, 0.92, 0.95),
+    borderWidth: 1,
+  });
+  page.drawText(`Date : ${formatDateFr(data.invoiceDate)}`, {
+    x: margin + 10,
+    y: y - 14,
     size: 9,
     font,
     color: SLATE,
   });
-  page.drawText(`Type : ${data.typeLabel}`, {
-    x: margin + 200,
-    y,
+  page.drawText(`Nature : ${data.typeLabel}`, {
+    x: margin + 220,
+    y: y - 14,
     size: 9,
     font,
     color: SLATE,
   });
-  y -= 28;
+  y -= 36;
 
   const tableTop = y;
   page.drawRectangle({
     x: margin,
-    y: tableTop - 22,
+    y: tableTop - 24,
     width: contentWidth,
-    height: 22,
-    color: LIGHT,
+    height: 24,
+    color: NAVY,
   });
   page.drawText("Désignation", {
-    x: margin + 10,
-    y: tableTop - 15,
+    x: margin + 12,
+    y: tableTop - 16,
     size: 9,
     font: fontBold,
-    color: NAVY,
+    color: WHITE,
   });
-  page.drawText("Montant TTC", {
-    x: width - margin - 78,
-    y: tableTop - 15,
+  page.drawText("Montant net", {
+    x: width - margin - 82,
+    y: tableTop - 16,
     size: 9,
     font: fontBold,
-    color: NAVY,
+    color: WHITE,
   });
-  drawLine(page, margin, tableTop - 22, margin + contentWidth, tableTop - 22);
 
-  y = tableTop - 36;
+  y = tableTop - 38;
   for (const line of data.lines) {
     const wrapped = wrapText(line.label, 62);
+    const rowHeight = Math.max(wrapped.length * 12, 14) + 10;
+    page.drawRectangle({
+      x: margin,
+      y: y - rowHeight + 6,
+      width: contentWidth,
+      height: rowHeight,
+      color: WHITE,
+      borderColor: rgb(0.92, 0.94, 0.96),
+      borderWidth: 1,
+    });
     for (let i = 0; i < wrapped.length; i++) {
       page.drawText(wrapped[i]!, {
-        x: margin + 10,
+        x: margin + 12,
         y: y - i * 12,
         size: 9,
         font,
@@ -229,42 +317,41 @@ export async function generateSiteInvoicePdf(
       });
     }
     page.drawText(formatEuros(line.amountEuros), {
-      x: width - margin - 78,
+      x: width - margin - 82,
       y,
       size: 9,
       font: fontBold,
       color: NAVY,
     });
-    y -= Math.max(wrapped.length * 12, 14) + 8;
-    drawLine(page, margin, y + 4, margin + contentWidth, y + 4, LIGHT, 1);
+    y -= rowHeight + 4;
   }
 
-  y -= 8;
+  y -= 4;
   page.drawRectangle({
-    x: width - margin - 170,
-    y: y - 26,
-    width: 170,
-    height: 26,
-    color: rgb(0.98, 0.96, 0.96),
+    x: width - margin - 190,
+    y: y - 30,
+    width: 190,
+    height: 30,
+    color: rgb(0.99, 0.97, 0.97),
     borderColor: RED,
-    borderWidth: 1,
+    borderWidth: 1.5,
   });
-  page.drawText("Total TTC", {
-    x: width - margin - 158,
-    y: y - 17,
-    size: 10,
+  page.drawText("Total net", {
+    x: width - margin - 176,
+    y: y - 19,
+    size: 9,
     font: fontBold,
     color: NAVY,
   });
   page.drawText(formatEuros(data.totalEuros), {
-    x: width - margin - 78,
-    y: y - 17,
-    size: 11,
+    x: width - margin - 82,
+    y: y - 19,
+    size: 12,
     font: fontBold,
     color: RED,
   });
 
-  y -= 48;
+  y -= 52;
   page.drawText("Paiement", {
     x: margin,
     y,
@@ -279,9 +366,11 @@ export async function generateSiteInvoicePdf(
     size: 9,
     font,
     color: SLATE,
+    maxWidth: contentWidth,
+    lineHeight: 11,
   });
   if (data.stripeReference) {
-    y -= 12;
+    y -= 24;
     page.drawText(`Réf. Stripe : ${data.stripeReference}`, {
       x: margin,
       y,
@@ -314,9 +403,9 @@ export async function generateSiteInvoicePdf(
   }
 
   const footerY = margin + 12;
-  drawLine(page, margin, footerY + 14, margin + contentWidth, footerY + 14);
+  drawLine(page, margin, footerY + 14, margin + contentWidth, footerY + 14, RED, 1);
   page.drawText(
-    `${data.company.tradeName} — ${data.company.website} — ${data.company.email}`,
+    `${data.company.tradeName} — ${data.company.addressLine1}, ${data.company.addressLine2} — ${data.company.email}`,
     {
       x: margin,
       y: footerY,

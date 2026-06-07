@@ -1,5 +1,10 @@
 import * as admin from "firebase-admin";
 
+import {
+  CLIENT_PACK_ITEMS,
+  CLIENT_SUBSCRIBER_PACK_ITEMS,
+  CLIENT_SUBSCRIPTION_ITEMS,
+} from "@/lib/clientCatalog";
 import { getCompanyInvoiceInfo } from "@/lib/companyInvoiceConfig";
 import { labelClientTxType } from "@/lib/clientTransactions";
 import type { SiteInvoiceData } from "@/server/generateInvoicePdf";
@@ -70,6 +75,100 @@ function clientAddressLines(user: Record<string, unknown>): string[] {
   return lines;
 }
 
+/** Libellé facture pour abonnements et renouvellements (sans quota kg). */
+export const INVOICE_SUBSCRIPTION_SERVICE_LABEL =
+  "Prestation de service d'entretien";
+
+function planIdFromTransaction(tx: Record<string, unknown>): string {
+  const role = str(tx.role);
+  if (
+    role &&
+    role !== "aucun" &&
+    role !== "admin" &&
+    role !== "attente_secteur"
+  ) {
+    return role;
+  }
+  const titre = str(tx.titre);
+  const match = titre.match(/^(?:Formule|Renouvellement)\s+(.+)$/i);
+  if (match?.[1]) return match[1].trim();
+  return titre;
+}
+
+function kgFromPlanLabel(label: string): number | null {
+  const match = label.match(/(\d+(?:[.,]\d+)?)\s*kg/i);
+  if (!match?.[1]) return null;
+  const n = Number.parseFloat(match[1].replace(",", "."));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function catalogDisplayName(planId: string): string {
+  const id = planId.trim();
+  if (!id) return "";
+  const all = [
+    ...CLIENT_SUBSCRIPTION_ITEMS,
+    ...CLIENT_PACK_ITEMS,
+    ...CLIENT_SUBSCRIBER_PACK_ITEMS,
+  ];
+  const entry = all.find(
+    (p) => p.recapPlanId.toLowerCase() === id.toLowerCase()
+  );
+  return entry?.name ?? id;
+}
+
+function isPackProductLabel(label: string): boolean {
+  const id = label.trim();
+  if (!id) return false;
+  if (/pack|recharge/i.test(id)) return true;
+  return (
+    CLIENT_PACK_ITEMS.some((p) => p.recapPlanId === id) ||
+    CLIENT_SUBSCRIBER_PACK_ITEMS.some((p) => p.recapPlanId === id)
+  );
+}
+
+function formatPackLabel(label: string): string | null {
+  const kg = kgFromPlanLabel(label);
+  if (kg == null) return null;
+  const value = kg.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+  return `Pack ${value} kg`;
+}
+
+function subscriptionInvoiceLineLabel(tx: Record<string, unknown>): string {
+  const planId = planIdFromTransaction(tx);
+  const name = catalogDisplayName(planId);
+  if (!name) return INVOICE_SUBSCRIPTION_SERVICE_LABEL;
+
+  const type = str(tx.type).toLowerCase();
+  const kind = type.includes("renouvel") ? "Renouvellement" : "Abonnement";
+  return `${INVOICE_SUBSCRIPTION_SERVICE_LABEL} - ${kind} ${name}`;
+}
+
+function invoiceLineLabel(tx: Record<string, unknown>): string {
+  const type = str(tx.type).toLowerCase();
+  if (type.includes("abonn") || type.includes("renouvel")) {
+    return subscriptionInvoiceLineLabel(tx);
+  }
+
+  const planId = planIdFromTransaction(tx);
+  const titre = str(tx.titre);
+  const packSource = isPackProductLabel(planId)
+    ? planId
+    : isPackProductLabel(titre)
+      ? titre
+      : "";
+
+  if (packSource) {
+    const packLabel = formatPackLabel(packSource);
+    if (packLabel) {
+      return `${INVOICE_SUBSCRIPTION_SERVICE_LABEL} - ${packLabel}`;
+    }
+  }
+
+  const name = catalogDisplayName(planId) || titre;
+  if (name) return `${INVOICE_SUBSCRIPTION_SERVICE_LABEL} - ${name}`;
+  return "Prestation Le Repasseur";
+}
+
 function invoiceNumberForTransaction(
   txId: string,
   tx: Record<string, unknown>
@@ -95,7 +194,7 @@ export function buildSiteInvoiceData(
 ): SiteInvoiceData {
   const company = getCompanyInvoiceInfo();
   const amount = parseAmountEuros(tx);
-  const titre = str(tx.titre) || str(tx.role) || "Prestation Le Repasseur";
+  const lineLabel = invoiceLineLabel(tx);
   const typeLabel = labelClientTxType(tx.type);
   const invoiceDate = toDate(tx.transactionDate ?? tx.date ?? tx.createdAt);
 
@@ -114,7 +213,7 @@ export function buildSiteInvoiceData(
     clientAddressLines: clientAddressLines(user),
     lines: [
       {
-        label: titre,
+        label: lineLabel,
         amountEuros: amount,
       },
     ],
