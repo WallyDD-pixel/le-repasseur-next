@@ -11,6 +11,7 @@ import {
   userSubscriptionTag,
   type AdminUserRow,
 } from "@/lib/usersAdmin";
+import { AdminTableShell } from "@/components/admin/AdminTableShell";
 import { getFirebaseFirestore } from "@/lib/firebase";
 import { firebaseMessage } from "@/lib/firebaseError";
 
@@ -432,8 +433,46 @@ export default function AdminUtilisateursPage() {
             : "Aucun résultat pour ces filtres."}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+        <AdminTableShell
+          footer={
+          <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-600">
+              <span className="font-medium tabular-nums text-[#10294B]">
+                {totalFiltered === 0
+                  ? "Aucune ligne"
+                  : `Affichage ${rangeStart}–${rangeEnd} sur ${totalFiltered}`}
+              </span>
+              {rows.length !== totalFiltered ? (
+                <span className="text-slate-500">
+                  {" "}
+                  ({rows.length} au chargement)
+                </span>
+              ) : null}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#10294B] shadow-sm disabled:opacity-40"
+              >
+                Précédent
+              </button>
+              <span className="tabular-nums text-xs text-slate-600">
+                Page {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#10294B] shadow-sm disabled:opacity-40"
+              >
+                Suivant
+              </button>
+            </div>
+          </div>
+          }
+        >
             <table className="min-w-[1400px] w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/90">
@@ -573,44 +612,7 @@ export default function AdminUtilisateursPage() {
                 })}
               </tbody>
             </table>
-          </div>
-          <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-600">
-              <span className="font-medium tabular-nums text-[#10294B]">
-                {totalFiltered === 0
-                  ? "Aucune ligne"
-                  : `Affichage ${rangeStart}–${rangeEnd} sur ${totalFiltered}`}
-              </span>
-              {rows.length !== totalFiltered ? (
-                <span className="text-slate-500">
-                  {" "}
-                  ({rows.length} au chargement)
-                </span>
-              ) : null}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#10294B] shadow-sm disabled:opacity-40"
-              >
-                Précédent
-              </button>
-              <span className="tabular-nums text-xs text-slate-600">
-                Page {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#10294B] shadow-sm disabled:opacity-40"
-              >
-                Suivant
-              </button>
-            </div>
-          </div>
-        </div>
+        </AdminTableShell>
       )}
     </div>
   );

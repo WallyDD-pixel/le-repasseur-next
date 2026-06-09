@@ -9,13 +9,13 @@ export function AdminAppFrame({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminAuthGate>
-      <div className="flex min-h-screen bg-[#eef1f6]">
+      <div className="flex min-h-screen min-w-0 bg-[#eef1f6]">
         <AdminSidebar
           mobileOpen={mobileNav}
           onCloseMobile={() => setMobileNav(false)}
         />
 
-        <div className="flex min-h-screen flex-1 flex-col lg:min-h-0">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:min-h-0">
           <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
             <button
               type="button"
@@ -45,7 +45,9 @@ export function AdminAppFrame({ children }: { children: React.ReactNode }) {
             </span>
           </header>
 
-          <main className="flex-1 px-4 py-8 sm:px-8 lg:py-10">{children}</main>
+          <main className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:py-10">
+            {children}
+          </main>
         </div>
       </div>
     </AdminAuthGate>

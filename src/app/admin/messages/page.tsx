@@ -9,6 +9,7 @@ import {
   loadContactMessageRows,
   type AdminContactMessageRow,
 } from "@/lib/contactMessagesAdmin";
+import { AdminTableShell } from "@/components/admin/AdminTableShell";
 import { getFirebaseFirestore } from "@/lib/firebase";
 import { firebaseMessage } from "@/lib/firebaseError";
 
@@ -241,7 +242,7 @@ export default function AdminMessagesPage() {
           Aucun message ou collections vides / droits insuffisants.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <AdminTableShell>
           <table className="w-full min-w-[900px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/90">
@@ -319,7 +320,7 @@ export default function AdminMessagesPage() {
               })}
             </tbody>
           </table>
-        </div>
+        </AdminTableShell>
       )}
 
       {selected ? (

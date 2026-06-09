@@ -118,6 +118,10 @@ export async function findPlanOrProductData(
  * - `collectes` / `collecte` du plan → `users.reservations` (nombre de collectes)
  * - `kg` du plan → `users.collectes` (quota kg)
  */
+function isPackOrRechargePlan(planId: string): boolean {
+  return /pack|recharge/i.test(planId.trim());
+}
+
 export function resolvePlanCredits(
   planId: string,
   planData: Record<string, unknown>
@@ -128,6 +132,14 @@ export function resolvePlanCredits(
     planData.collectes ?? planData.collecte
   );
   const fromDocKg = readPositiveNumber(planData.kg);
+
+  // Packs ponctuels : le catalogue fait foi (évite produit Firestore `pack2.5` avec kg: 2.5 pour 49 €).
+  if (planId && isPackOrRechargePlan(planId) && defaults) {
+    return {
+      addReservations: defaults.collectes,
+      addKg: defaults.kg,
+    };
+  }
 
   if (planId && isTestOfferPlanId(planId)) {
     return {

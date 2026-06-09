@@ -27,6 +27,13 @@ export const RESERVATION_ETAT_DEFAULT = "En attente";
 export const TAKE_CHARGE_ETAT = "Validation de votre demande";
 
 /**
+ * Champ lu par l’app mobile pour savoir si une demande est encore « en cours ».
+ * « inactif » = terminée (linge restitué) ; l’utilisateur peut en créer une nouvelle.
+ */
+export const RESERVATION_ACTIVITE_INACTIF = "inactif";
+export const RESERVATION_ACTIVITE_ACTIF = "actif";
+
+/**
  * Étapes du suivi client (ordre chronologique).
  * Aligné sur l’app mobile / la gestion admin.
  */
@@ -268,6 +275,16 @@ function mergeDateSlots(
   return { date: null, display: null };
 }
 
+const USER_ID_DATA_FIELDS = [
+  "userId",
+  "userid",
+  "uid",
+  "idUtilisateur",
+  "user",
+] as const;
+
+const USER_ID_QUERY_FIELDS = ["userId", "userid", "uid", "idUtilisateur"] as const;
+
 export function normalizeReservationDoc(
   id: string,
   data: Record<string, unknown>,
@@ -276,7 +293,7 @@ export function normalizeReservationDoc(
   const etatFieldName = detectEtatField(data);
   const etat = coerceEtat(data, etatFieldName);
 
-  const uidRaw = pickFirst(data, ["userId", "uid", "idUtilisateur", "user"]);
+  const uidRaw = pickFirst(data, [...USER_ID_DATA_FIELDS]);
   const userId =
     typeof uidRaw === "string" && uidRaw.trim() ? uidRaw.trim() : null;
 
@@ -425,8 +442,6 @@ export function reservationEtatBadgeClass(etat: string): string {
   return "bg-slate-100 text-slate-800 ring-slate-200";
 }
 
-const USER_ID_QUERY_FIELDS = ["userId", "uid", "idUtilisateur"] as const;
-
 /**
  * Demandes de réservation d’un utilisateur (app mobile / legacy).
  * Interroge plusieurs champs d’identifiant pour couvrir les anciens documents.
@@ -505,7 +520,7 @@ export async function loadReservationRows(
 
   const userIds = new Set<string>();
   for (const r of rawRows) {
-    const uid = pickFirst(r.data, ["userId", "uid", "idUtilisateur", "user"]);
+    const uid = pickFirst(r.data, [...USER_ID_DATA_FIELDS]);
     if (typeof uid === "string" && uid.trim()) userIds.add(uid.trim());
   }
 
@@ -518,7 +533,7 @@ export async function loadReservationRows(
   );
 
   const rows: ReservationAdminRow[] = rawRows.map(({ id, data }) => {
-    const uidRaw = pickFirst(data, ["userId", "uid", "idUtilisateur", "user"]);
+    const uidRaw = pickFirst(data, [...USER_ID_DATA_FIELDS]);
     const uid =
       typeof uidRaw === "string" && uidRaw.trim() ? uidRaw.trim() : null;
     const userData = uid ? userMap.get(uid) : undefined;
@@ -543,7 +558,7 @@ export async function loadReservationById(
 
   const data = snap.data() as Record<string, unknown>;
   let userData: Record<string, unknown> | undefined;
-  const uidRaw = pickFirst(data, ["userId", "uid", "idUtilisateur", "user"]);
+  const uidRaw = pickFirst(data, [...USER_ID_DATA_FIELDS]);
   const uid =
     typeof uidRaw === "string" && uidRaw.trim() ? uidRaw.trim() : null;
   if (uid) {
@@ -561,10 +576,15 @@ export async function setReservationEtat(
   etat: string
 ): Promise<void> {
   const ref = doc(db, RESERVATIONS_COLLECTION, row.id);
-  await updateDoc(ref, {
-    [row.etatFieldName]: etat.trim(),
+  const trimmed = etat.trim();
+  const patch: Record<string, unknown> = {
+    [row.etatFieldName]: trimmed,
     updatedAt: serverTimestamp(),
-  });
+  };
+  if (isLingeRestitueLabel(trimmed)) {
+    patch.activite = RESERVATION_ACTIVITE_INACTIF;
+  }
+  await updateDoc(ref, patch);
 }
 
 export async function setReservationPrisEnCharge(

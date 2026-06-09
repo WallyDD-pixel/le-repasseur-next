@@ -6,7 +6,8 @@ import {
   loadActiviteSiteRows,
   type ActiviteSiteRow,
 } from "@/lib/activiteAdmin";
-import { getFirebaseFirestore } from "@/lib/firebase";
+import { AdminTableShell } from "@/components/admin/AdminTableShell";
+import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 
 type SortKey =
   | "date"
@@ -76,6 +77,74 @@ function rowsToCsv(rows: ActiviteSiteRow[]): string {
     );
   }
   return "\uFEFF" + lines.join("\r\n");
+}
+
+function activiteRowCanInvoice(row: ActiviteSiteRow): boolean {
+  return row.montantEuros != null && row.montantEuros > 0;
+}
+
+async function downloadAdminInvoicePdf(
+  transactionId: string
+): Promise<string | null> {
+  const u = getFirebaseAuth().currentUser;
+  if (!u) return "Connexion requise.";
+  try {
+    const idToken = await u.getIdToken();
+    const res = await fetch(
+      `/api/admin/invoice-pdf?transactionId=${encodeURIComponent(transactionId)}`,
+      { headers: { Authorization: `Bearer ${idToken}` } }
+    );
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      return data.error ?? "Génération de la facture impossible.";
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] ?? `facture-${transactionId}.pdf`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    return null;
+  } catch {
+    return "Génération de la facture impossible.";
+  }
+}
+
+function ActiviteInvoiceButton({ row }: { row: ActiviteSiteRow }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!activiteRowCanInvoice(row)) {
+    return <span className="text-slate-400">—</span>;
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        disabled={loading}
+        onClick={async () => {
+          setError(null);
+          setLoading(true);
+          const err = await downloadAdminInvoicePdf(row.id);
+          setLoading(false);
+          if (err) setError(err);
+        }}
+        className="inline-flex items-center justify-center rounded-lg border border-[#10294B]/20 bg-[#10294B] px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0c203d] disabled:opacity-50"
+      >
+        {loading ? "PDF…" : "Facture PDF"}
+      </button>
+      {error ? (
+        <span className="max-w-[140px] text-[10px] leading-tight text-red-600">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 function compareRows(a: ActiviteSiteRow, b: ActiviteSiteRow, key: SortKey): number {
@@ -332,77 +401,8 @@ export default function AdminActivitePage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="min-w-[1000px] w-full border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/90">
-                  {(
-                    [
-                      ["date", "DATE"],
-                      ["type", "TYPE"],
-                      ["titre", "TITRE"],
-                      ["client", "CLIENT"],
-                      ["email", "EMAIL"],
-                      ["montant", "MONTANT"],
-                      ["numero", "N° CLIENT"],
-                      ["abonnement", "ABONNEMENT"],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <th key={key} className="px-4 py-3 font-bold text-[#10294B]">
-                      <button
-                        type="button"
-                        onClick={() => toggleSort(key)}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-1 py-0.5 text-xs uppercase tracking-wide hover:bg-slate-100"
-                      >
-                        {label}
-                        <span className="tabular-nums text-slate-400">
-                          {sortKey === key ? (sortDir === "asc" ? "↑" : "↓") : "⇅"}
-                        </span>
-                      </button>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {paginated.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-slate-100 transition hover:bg-slate-50/80"
-                  >
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                      {formatActiviteDate(r.date)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${typeBadgeClass(r.typeLabel)}`}
-                      >
-                        {r.typeLabel}
-                      </span>
-                    </td>
-                    <td className="max-w-[220px] truncate px-4 py-3 text-slate-800">
-                      {r.titre}
-                    </td>
-                    <td className="max-w-[200px] truncate px-4 py-3 text-slate-700">
-                      {r.client}
-                    </td>
-                    <td className="max-w-[220px] truncate px-4 py-3 text-slate-600">
-                      {r.email}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium tabular-nums text-slate-900">
-                      {r.montantDisplay}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-700">
-                      {r.numeroClient}
-                    </td>
-                    <td className="max-w-[280px] px-4 py-3 text-xs leading-snug text-slate-600">
-                      {r.abonnementDisplay}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <AdminTableShell
+          footer={
           <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <p className="text-xs text-slate-600">
               <span className="font-medium tabular-nums text-[#10294B]">
@@ -442,7 +442,83 @@ export default function AdminActivitePage() {
               </button>
             </div>
           </div>
-        </div>
+          }
+        >
+            <table className="min-w-[1150px] w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/90">
+                  {(
+                    [
+                      ["date", "DATE"],
+                      ["type", "TYPE"],
+                      ["titre", "TITRE"],
+                      ["client", "CLIENT"],
+                      ["email", "EMAIL"],
+                      ["montant", "MONTANT"],
+                      ["numero", "N° CLIENT"],
+                      ["abonnement", "ABONNEMENT"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <th key={key} className="px-4 py-3 font-bold text-[#10294B]">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(key)}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-1 py-0.5 text-xs uppercase tracking-wide hover:bg-slate-100"
+                      >
+                        {label}
+                        <span className="tabular-nums text-slate-400">
+                          {sortKey === key ? (sortDir === "asc" ? "↑" : "↓") : "⇅"}
+                        </span>
+                      </button>
+                    </th>
+                  ))}
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#10294B]">
+                    Facture
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="border-b border-slate-100 transition hover:bg-slate-50/80"
+                  >
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                      {formatActiviteDate(r.date)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${typeBadgeClass(r.typeLabel)}`}
+                      >
+                        {r.typeLabel}
+                      </span>
+                    </td>
+                    <td className="max-w-[220px] truncate px-4 py-3 text-slate-800">
+                      {r.titre}
+                    </td>
+                    <td className="max-w-[200px] truncate px-4 py-3 text-slate-700">
+                      {r.client}
+                    </td>
+                    <td className="max-w-[220px] truncate px-4 py-3 text-slate-600">
+                      {r.email}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 font-medium tabular-nums text-slate-900">
+                      {r.montantDisplay}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-700">
+                      {r.numeroClient}
+                    </td>
+                    <td className="max-w-[280px] px-4 py-3 text-xs leading-snug text-slate-600">
+                      {r.abonnementDisplay}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <ActiviteInvoiceButton row={r} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        </AdminTableShell>
       )}
     </div>
   );

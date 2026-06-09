@@ -9,6 +9,7 @@ import {
   markEmailVerified,
   type AdminEmailRow,
 } from "@/lib/emailsAdmin";
+import { AdminTableShell } from "@/components/admin/AdminTableShell";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
 import { firebaseMessage } from "@/lib/firebaseError";
 
@@ -399,7 +400,7 @@ export default function AdminEmailsPage() {
             Aucune entrée ou filtres trop stricts.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <AdminTableShell>
             <table className="w-full min-w-[700px] border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/90">
@@ -470,7 +471,7 @@ export default function AdminEmailsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </AdminTableShell>
         )}
       </section>
     </div>

@@ -8,6 +8,7 @@ import {
   loadPartnerPromoRows,
   type PartnerPromoRow,
 } from "@/lib/partnerPromoAdmin";
+import { AdminTableShell } from "@/components/admin/AdminTableShell";
 import { getFirebaseFirestore } from "@/lib/firebase";
 import { firebaseMessage } from "@/lib/firebaseError";
 
@@ -120,8 +121,8 @@ export default function AdminPartenairesPage() {
           Aucun code ou droits insuffisants.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full border-collapse text-left text-sm">
+        <AdminTableShell>
+          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/90">
                 {(
@@ -183,7 +184,7 @@ export default function AdminPartenairesPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </AdminTableShell>
       )}
     </div>
   );
