@@ -323,7 +323,7 @@ export default function AdminUtilisateursPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px]">
+    <div className="mx-auto w-full min-w-0 max-w-[1600px]">
       <div className="mb-8">
         <h1 className="font-lobster text-3xl text-[#10294B] sm:text-4xl">
           Liste des utilisateurs
@@ -510,7 +510,7 @@ export default function AdminUtilisateursPage() {
                       </button>
                     </th>
                   ))}
-                  <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#10294B]">
+                  <th className="sticky right-0 z-10 whitespace-nowrap bg-slate-50/95 px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#10294B] shadow-[-6px_0_12px_-6px_rgba(0,0,0,0.12)] backdrop-blur-sm">
                     Actions
                   </th>
                 </tr>
@@ -521,7 +521,7 @@ export default function AdminUtilisateursPage() {
                   return (
                     <tr
                       key={r.id}
-                      className="border-b border-slate-100 transition hover:bg-slate-50/80"
+                      className="group border-b border-slate-100 transition hover:bg-slate-50/80"
                     >
                       <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
                         {formatDateCourt(r.inscriptionDate)}
@@ -564,7 +564,7 @@ export default function AdminUtilisateursPage() {
                       <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-800">
                         {r.reservations}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3">
+                      <td className="sticky right-0 z-[1] whitespace-nowrap bg-white px-4 py-3 shadow-[-6px_0_12px_-6px_rgba(0,0,0,0.08)] group-hover:bg-slate-50/80">
                         <div className="flex flex-wrap gap-2">
                           <Link
                             href={`/admin/utilisateurs/${encodeURIComponent(r.id)}`}

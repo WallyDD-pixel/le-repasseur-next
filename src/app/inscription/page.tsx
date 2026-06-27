@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseFirestore } from "@/lib/firebase";
+import { writeUserQuotaAuditClient } from "@/lib/userQuotaAuditClient";
 import {
   cityForPostalCode,
   isPostalCodeCovered,
@@ -169,6 +170,20 @@ export default function InscriptionPage() {
         dateInscription: now,
         inscriptionDate: now,
         updatedAt: now,
+      });
+
+      await writeUserQuotaAuditClient({
+        userId: cred.user.uid,
+        email: values.email.trim(),
+        source: "inscription",
+        action: "init",
+        before: { collectesKg: 0, reservations: 0 },
+        after: {
+          collectesKg: 0,
+          reservations: 0,
+          role: covered ? "aucun" : "attente_secteur",
+        },
+        note: "Compte créé — quotas initiaux",
       });
 
       if (covered) {

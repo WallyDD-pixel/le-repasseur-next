@@ -45,7 +45,7 @@ export function AdminAppFrame({ children }: { children: React.ReactNode }) {
             </span>
           </header>
 
-          <main className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:py-10">
+          <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-8 sm:px-8 lg:py-10">
             {children}
           </main>
         </div>

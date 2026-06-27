@@ -24,8 +24,14 @@ import {
   buildUserProfileUpdate,
   userAddressFromFirestore,
 } from "@/lib/userProfileFirestore";
+import {
+  quotaSnapshotFromUserData,
+  type QuotaSnapshot,
+} from "@/lib/userQuotaAudit";
+import { writeUserQuotaAuditClient } from "@/lib/userQuotaAuditClient";
 import { getFirebaseFirestore } from "@/lib/firebase";
 import { firebaseMessage } from "@/lib/firebaseError";
+import { UserQuotaAuditPanel } from "@/components/admin/UserQuotaAuditPanel";
 
 export default function ModifierUtilisateurPage() {
   const params = useParams();
@@ -64,6 +70,9 @@ export default function ModifierUtilisateurPage() {
   ]);
   /** À la première sauvegarde : pose createdAt + dateInscription si le doc n’en avait pas. */
   const [stampSignupDatesOnSave, setStampSignupDatesOnSave] = useState(false);
+  const [quotaBeforeSave, setQuotaBeforeSave] = useState<QuotaSnapshot | null>(
+    null
+  );
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -150,6 +159,7 @@ export default function ModifierUtilisateurPage() {
             : ""
       );
       setStampSignupDatesOnSave(userDocLacksSignupTimestamps(data));
+      setQuotaBeforeSave(quotaSnapshotFromUserData(data));
     } catch (err) {
       setError(`Impossible de charger le profil — ${firebaseMessage(err)}`);
     } finally {
@@ -224,6 +234,39 @@ export default function ModifierUtilisateurPage() {
       };
 
       await updateDoc(doc(db, USERS_COLLECTION, userId), payload);
+
+      const afterQuota: QuotaSnapshot = {
+        collectesKg:
+          kgNum != null && !Number.isNaN(kgNum) ? kgNum : 0,
+        reservations:
+          Number.isFinite(resNum) && resNum >= 0 ? resNum : 0,
+        role: role.trim() || "aucun",
+      };
+      const before = quotaBeforeSave ?? {
+        collectesKg: 0,
+        reservations: 0,
+      };
+      const quotaChanged =
+        before.collectesKg !== afterQuota.collectesKg ||
+        before.reservations !== afterQuota.reservations ||
+        before.role !== afterQuota.role;
+
+      if (quotaChanged) {
+        await writeUserQuotaAuditClient({
+          userId,
+          email: email.trim() || undefined,
+          source: "admin_manual",
+          action: "set",
+          before,
+          after: afterQuota,
+          delta: {
+            collectesKg: afterQuota.collectesKg - before.collectesKg,
+            reservations: afterQuota.reservations - before.reservations,
+          },
+          note: "Modification admin utilisateur",
+        });
+      }
+
       router.push("/admin/utilisateurs");
     } catch (err) {
       setError(`Enregistrement impossible — ${firebaseMessage(err)}`);
@@ -548,6 +591,8 @@ export default function ModifierUtilisateurPage() {
           </PrimaryButton>
         </div>
       </form>
+
+      <UserQuotaAuditPanel userId={userId} />
     </div>
   );
 }

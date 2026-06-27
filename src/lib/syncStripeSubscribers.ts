@@ -9,6 +9,8 @@ import {
 } from "@/lib/planCreditsResolve";
 import { resolveStripeSubscriptionContext } from "@/lib/stripeSubscriptionResolve";
 import { isSubscriptionRecapPlan } from "@/lib/stripePlans";
+import { quotaSnapshotFromUserData } from "@/lib/userQuotaAudit";
+import { writeUserQuotaAudit } from "@/server/userQuotaAudit";
 
 export type SyncStripeSubscribersOptions = {
   /** Si false, aucune écriture Firestore (aperçu uniquement). */
@@ -278,6 +280,38 @@ export async function syncStripeSubscribers(
       if (!options.dryRun) {
         await userRef.set(updates, { merge: true });
         await ensureSubscriptionTransaction(db, uid, sub, ctx.planId, false);
+
+        if (options.setQuotas) {
+          const afterQuota = quotaSnapshotFromUserData({
+            ...userData,
+            role: ctx.planId,
+            reservations:
+              addReservations != null ? addReservations : userData.reservations,
+            collectes: addKg != null ? addKg : userData.collectes,
+          });
+          await writeUserQuotaAudit(db, {
+            userId: uid,
+            email: ctx.customerEmail || undefined,
+            source: "sync_stripe",
+            action: "set",
+            before: quotaSnapshotFromUserData(userData),
+            after: afterQuota,
+            delta: {
+              collectesKg:
+                addKg != null
+                  ? afterQuota.collectesKg -
+                    quotaSnapshotFromUserData(userData).collectesKg
+                  : undefined,
+              reservations:
+                addReservations != null
+                  ? afterQuota.reservations -
+                    quotaSnapshotFromUserData(userData).reservations
+                  : undefined,
+            },
+            planId: ctx.planId,
+            note: `Sync abonné Stripe ${sub.id}`,
+          });
+        }
       }
 
       rows.push({

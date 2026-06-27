@@ -13,9 +13,9 @@ type Props = {
 export function AdminTableShell({ children, footer, className = "" }: Props) {
   return (
     <div
-      className={`max-w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ${className}`}
+      className={`min-w-0 w-full max-w-full rounded-2xl border border-slate-200/90 bg-white shadow-sm ${className}`}
     >
-      <div className="w-full max-w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+      <div className="min-w-0 w-full max-w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         {children}
       </div>
       {footer}

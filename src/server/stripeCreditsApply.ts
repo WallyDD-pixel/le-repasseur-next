@@ -15,19 +15,19 @@ import {
 } from "@/lib/stripeMetadataLegacy";
 import { isSubscriptionRecapPlan } from "@/lib/stripePlans";
 import { isTestOfferPlanId } from "@/lib/testPaniereOffer";
+import {
+  quotaSnapshotFromUserData,
+  coerceQuotaNumber,
+  coerceQuotaReservations,
+} from "@/lib/userQuotaAudit";
+import { userQuotaAuditBatchSet } from "@/server/userQuotaAudit";
 
 function coerceUserNumber(raw: unknown, fallback = 0): number {
-  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
-  if (typeof raw === "string") {
-    const n = Number.parseFloat(raw.replace(",", ".").trim());
-    if (Number.isFinite(n)) return n;
-  }
-  return fallback;
+  return coerceQuotaNumber(raw, fallback);
 }
 
 function coerceUserReservations(raw: unknown): number {
-  const n = coerceUserNumber(raw, 0);
-  return n >= 0 ? Math.floor(n) : 0;
+  return coerceQuotaReservations(raw);
 }
 
 export type StripeCreditsApplyResult = {
@@ -77,6 +77,7 @@ export async function applyStripeCreditsIdempotent(
 
   const userSnap = await userRef.get();
   const userData = (userSnap.data() ?? {}) as Record<string, unknown>;
+  const beforeQuota = quotaSnapshotFromUserData(userData);
 
   const updates: Record<string, unknown> = {
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -108,6 +109,49 @@ export async function applyStripeCreditsIdempotent(
   const batch = db.batch();
   batch.set(txRef, txPayload, { merge: true });
   batch.set(userRef, updates, { merge: true });
+
+  if (credits != null) {
+    const afterRole =
+      setRole && isSubscriptionRecapPlan(planId) ? planId : beforeQuota.role;
+    const source =
+      txPayload.source === "checkout_confirm"
+        ? "stripe_checkout"
+        : "stripe_webhook_renewal";
+    userQuotaAuditBatchSet(db, batch, {
+      userId: uid,
+      email:
+        typeof userData.email === "string" ? userData.email.trim() : undefined,
+      source,
+      action: "increment",
+      before: beforeQuota,
+      after: {
+        collectesKg:
+          addKg != null
+            ? beforeQuota.collectesKg + addKg
+            : beforeQuota.collectesKg,
+        reservations:
+          addReservations != null
+            ? beforeQuota.reservations + addReservations
+            : beforeQuota.reservations,
+        ...(afterRole ? { role: afterRole } : {}),
+      },
+      delta: {
+        ...(addKg != null ? { collectesKg: addKg } : {}),
+        ...(addReservations != null ? { reservations: addReservations } : {}),
+      },
+      planId,
+      txDocId,
+      stripeInvoiceId:
+        typeof txPayload.stripeInvoiceId === "string"
+          ? txPayload.stripeInvoiceId
+          : undefined,
+      stripeCheckoutSessionId:
+        typeof txPayload.stripeCheckoutSessionId === "string"
+          ? txPayload.stripeCheckoutSessionId
+          : undefined,
+    });
+  }
+
   await batch.commit();
 
   return {
